@@ -9,7 +9,8 @@ class Game:
         self.screen = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
-    
+
+        self.background_tilemap = pygame.image.load("Assets/map.png").convert()
     def new(self):
         self.playing = True
 

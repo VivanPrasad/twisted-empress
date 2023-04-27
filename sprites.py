@@ -1,5 +1,6 @@
 from config import *
-import pygame, math, random
+import pygame, random
+from math import *
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -15,9 +16,45 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.Surface([self.width,self.height])
         self.image.fill(RED)
 
+        self.x_change = 0 #x_vel
+        self.y_change = 0 #y_vel
+
+        self.facing = "down"
+
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
 
     def update(self):
-        pass
+        self.movement()
+        self.rect.x += self.x_change
+        self.rect.y += self.y_change
+
+        self.x_change = 0
+        self.y_change = 0
+
+    def movement(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_a]:
+            self.x_change = (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
+            self.facing = 'left'
+        if keys[pygame.K_d]:
+            self.x_change = (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
+            self.facing = 'right'
+        
+        if keys[pygame.K_w]:
+            self.y_change -= (PLAYER_SPEED) if self.x_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
+            self.facing = 'up'
+        if keys[pygame.K_s]:
+            self.y_change += (PLAYER_SPEED) if self.x_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
+            self.facing = 'down'
+        
+        self.x_change = 0
+
+        if keys[pygame.K_a]:
+            self.x_change -= (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
+            self.facing = 'left'
+        if keys[pygame.K_d]:
+            self.x_change += (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
+            self.facing = 'right'
+        print(f"({self.x_change},{self.y_change})")
