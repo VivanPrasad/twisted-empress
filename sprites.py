@@ -18,8 +18,8 @@ class Background(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = 0
         self.y = 0
-        self.width = 128*6
-        self.height = 128*6
+        self.width = WIN_WIDTH
+        self.height = WIN_HEIGHT
         self.image = self.game.background_spritesheet.get_sprite(x*self.width,y*self.width,self.width,self.height)
 
         self.rect = self.image.get_rect()
@@ -61,39 +61,86 @@ class Player(pygame.sprite.Sprite):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a]:
             self.x_change = (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
-            self.facing = 'left'
         if keys[pygame.K_d]:
             self.x_change = (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
-            self.facing = 'right'
         
         if keys[pygame.K_w]:
             self.y_change -= (PLAYER_SPEED) if self.x_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
-            self.facing = 'up'
         if keys[pygame.K_s]:
             self.y_change += (PLAYER_SPEED) if self.x_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
-            self.facing = 'down'
         
         self.x_change = 0
 
         if keys[pygame.K_a]:
             self.x_change -= (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
-            self.facing = 'left'
         if keys[pygame.K_d]:
             self.x_change += (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
-            self.facing = 'right'
         #print(f"({self.x_change},{self.y_change})")
-    
+
+        if self.x_change == 0:
+            if self.y_change >= 0:
+                self.facing = "down"
+            else:
+                self.facing = "up"
+        elif self.y_change == 0:
+            if self.x_change < 0:
+                self.facing = "left"
+            else:
+                self.facing = "right"
+        else:
+            if self.y_change > 0:
+                if self.x_change < 0:
+                    self.facing = "down_left"
+                else:
+                    self.facing = "down_right"
+            else:
+                if self.x_change < 0:
+                    self.facing = "up_left"
+                else:
+                    self.facing = "up_right"
+
     def animate(self):
         down = self.game.character_spritesheet.get_sprite(0,self.power*48, self.width, self.height)
-        left = self.game.character_spritesheet.get_sprite(48,(self.power)*48, self.width, self.height)
-        right = self.game.character_spritesheet.get_sprite(48*2,self.power*48, self.width, self.height)
+        right = self.game.character_spritesheet.get_sprite(48,(self.power)*48, self.width, self.height)
+        left = pygame.transform.flip(right, True, False)
+        
         up = self.game.character_spritesheet.get_sprite(48*3,self.power*48, self.width, self.height)
+        
+        down_right = self.game.character_spritesheet.get_sprite(48*2,(self.power)*48, self.width, self.height)
+        down_left = pygame.transform.flip(down_right, True, False)
+        
+        up_right = self.game.character_spritesheet.get_sprite(48*4,self.power*48, self.width, self.height)
+        up_left = pygame.transform.flip(up_right, True, False)
+        
+        self.image = locals()[self.facing]
 
-        if self.facing == "down":
-            self.image = down
-        if self.facing == "up":
-            self.image = up
-        if self.facing == "left":
-            self.image = left
-        if self.facing == "right":
-            self.image = right
+class Button: 
+    def __init__(self, x, y, width, height, fg, bg, content, fontsize) -> None:
+        self.font = pygame.font.Font('Assets/royal-intonation.ttf', fontsize)
+
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+
+        self.content = content
+        self.fg = fg
+        self.bg = bg
+
+        self.image = pygame.Surface((self.width, self.height))
+        self.image.fill(self.bg)
+        self.rect = self.image.get_rect()
+
+        self.rect.x = self.x
+        self.rect.y = self. y
+        self.text = self.font.render(self.content, True, self.fg, self.bg)
+        self.text_rect = self.text.get_rect(center=(self.width/2, self.height/2))
+        self.image.blit(self.text, self.text_rect)
+
+    def is_pressed(self, pos, pressed):
+        if self.rect.collidepoint(pos):
+            if pressed[0]:
+                return True
+            return False
+        return False
+    

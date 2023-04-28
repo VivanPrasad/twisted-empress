@@ -10,9 +10,12 @@ class Game:
         self.title = pygame.display.set_caption("Twisted Empress")
         self.icon = pygame.display.set_icon(pygame.image.load("Assets\icon.png"))
         self.clock = pygame.time.Clock()
+        self.font = pygame.font.Font('Assets/royal-intonation.ttf',48)
         self.running = True
         self.background_spritesheet = Spritesheet("Assets\map2.png")
-        self.character_spritesheet = Spritesheet("Assets\player.png")
+        self.character_spritesheet = Spritesheet("Assets\player2.png")
+        self.intro_background = pygame.image.load("Assets\map2.png")
+        self.intro_background
     def new(self):
         self.playing = True
 
@@ -21,8 +24,8 @@ class Game:
         self.enemies = pygame.sprite.LayeredUpdates() #Stores all enemy sprites
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites
 
-        self.background = Background(self,4,3) #0 plains | 1 desert | 2 forest | 3 castle
-        self.player = Player(self, 1,2,1)
+        self.background = Background(self,0,3) #0 plains | 1 desert | 2 forest | 3 castle
+        self.player = Player(self, 1, 2,0)
     
     def events(self):
         #game loop events
@@ -51,8 +54,28 @@ class Game:
         pass
     
     def intro_screen(self):
-        pass
+        intro = True
 
+        title = self.font.render('Twisted Empress', True, BLACK)
+        title_rect = title.get_rect(x=WIN_WIDTH/2-160,y=WIN_HEIGHT/2-170)
+        play_button = Button(WIN_WIDTH/2-50,WIN_HEIGHT/2-50,100,50,WHITE,BLACK,'Play',32)
+        while intro:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    intro = False
+                    self.running = False
+            
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_pressed = pygame.mouse.get_pressed()
+            
+            if play_button.is_pressed(mouse_pos, mouse_pressed):
+                intro = False
+            
+            self.screen.blit(self.intro_background, (0,0))
+            self.screen.blit(title, title_rect)
+            self.screen.blit(play_button.image, play_button.rect)
+            self.clock.tick(FPS)
+            pygame.display.update()
 g = Game()
 g.intro_screen()
 g.new()
