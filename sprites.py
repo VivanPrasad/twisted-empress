@@ -26,8 +26,9 @@ class Background(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
 class Player(pygame.sprite.Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y, power = 0):
         self.game = game
+        self.power = power
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.all_sprites
         pygame.sprite.Sprite.__init__(self, self.groups)
@@ -48,6 +49,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = self.y
 
     def update(self):
+        self.animate()
         self.movement()
         self.rect.x += self.x_change
         self.rect.y += self.y_change
@@ -80,3 +82,18 @@ class Player(pygame.sprite.Sprite):
             self.x_change += (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
             self.facing = 'right'
         #print(f"({self.x_change},{self.y_change})")
+    
+    def animate(self):
+        down = self.game.character_spritesheet.get_sprite(0,self.power*48, self.width, self.height)
+        left = self.game.character_spritesheet.get_sprite(48,(self.power)*48, self.width, self.height)
+        right = self.game.character_spritesheet.get_sprite(48*2,self.power*48, self.width, self.height)
+        up = self.game.character_spritesheet.get_sprite(48*3,self.power*48, self.width, self.height)
+
+        if self.facing == "down":
+            self.image = down
+        if self.facing == "up":
+            self.image = up
+        if self.facing == "left":
+            self.image = left
+        if self.facing == "right":
+            self.image = right

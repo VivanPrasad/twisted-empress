@@ -22,7 +22,7 @@ class Game:
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites
 
         self.background = Background(self,4,3) #0 plains | 1 desert | 2 forest | 3 castle
-        self.player = Player(self, 1,2)
+        self.player = Player(self, 1,2,1)
     
     def events(self):
         #game loop events
