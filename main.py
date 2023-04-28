@@ -6,11 +6,13 @@ import sys
 class Game:
     def __init__(self) -> None:
         pygame.init()
-        self.screen = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT))
+        self.screen = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT),pygame.RESIZABLE)
+        self.title = pygame.display.set_caption("Twisted Empress")
+        self.icon = pygame.display.set_icon(pygame.image.load("Assets\icon.png"))
         self.clock = pygame.time.Clock()
         self.running = True
-
-        self.background_tilemap = pygame.image.load("Assets/map.png").convert()
+        self.background_spritesheet = Spritesheet("Assets\map2.png")
+        self.character_spritesheet = Spritesheet("Assets\player.png")
     def new(self):
         self.playing = True
 
@@ -19,6 +21,7 @@ class Game:
         self.enemies = pygame.sprite.LayeredUpdates() #Stores all enemy sprites
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites
 
+        self.background = Background(self,4,3) #0 plains | 1 desert | 2 forest | 3 castle
         self.player = Player(self, 1,2)
     
     def events(self):
@@ -35,6 +38,7 @@ class Game:
         self.all_sprites.draw(self.screen)
         self.clock.tick(FPS)
         pygame.display.update()
+    
     def main(self):
         #game loop
         while self.playing == True:
@@ -42,8 +46,10 @@ class Game:
             self.update()
             self.draw()
         self.running = False
+    
     def game_over(self):
         pass
+    
     def intro_screen(self):
         pass
 

@@ -2,6 +2,29 @@ from config import *
 import pygame, random
 from math import *
 
+class Spritesheet:
+    def __init__(self, file) -> None:
+        self.sheet = pygame.image.load(file).convert_alpha()
+    def get_sprite(self, x, y, width, height):
+        sprite = pygame.Surface([width,height])
+        sprite.blit(self.sheet, (0,0), (x,y,width,height))
+        sprite.set_colorkey(BLACK)
+        return sprite
+class Background(pygame.sprite.Sprite):
+    def __init__(self,game, x, y):
+        self.game = game
+        self._layer = 1
+        self.groups = self.game.all_sprites
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.x = 0
+        self.y = 0
+        self.width = 128*6
+        self.height = 128*6
+        self.image = self.game.background_spritesheet.get_sprite(x*self.width,y*self.width,self.width,self.height)
+
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
 class Player(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
         self.game = game
@@ -13,8 +36,7 @@ class Player(pygame.sprite.Sprite):
         self.width = TILESIZE
         self.height = TILESIZE
 
-        self.image = pygame.Surface([self.width,self.height])
-        self.image.fill(RED)
+        self.image = self.game.character_spritesheet.get_sprite(1,1,self.width,self.height)
 
         self.x_change = 0 #x_vel
         self.y_change = 0 #y_vel
@@ -57,4 +79,4 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_d]:
             self.x_change += (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
             self.facing = 'right'
-        print(f"({self.x_change},{self.y_change})")
+        #print(f"({self.x_change},{self.y_change})")
