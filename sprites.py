@@ -21,7 +21,7 @@ class Background(pygame.sprite.Sprite):
         self.width = WIN_WIDTH
         self.height = WIN_HEIGHT
         self.image = self.game.background_spritesheet.get_sprite(x*self.width,y*self.width,self.width,self.height)
-
+        self.image.set_alpha(75)
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
@@ -51,12 +51,18 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.animate()
         self.movement()
+
         self.rect.x += self.x_change
         self.rect.y += self.y_change
-
+        self.x += self.x_change
+        self.y += self.y_change
         self.x_change = 0
         self.y_change = 0
 
+        print(self.y)
+        if self.y < 5:
+            self.rect.y = WIN_HEIGHT - 32
+            self.y = self.rect.y
     def movement(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_a]:
@@ -142,5 +148,11 @@ class Button:
             if pressed[0]:
                 return True
             return False
+        return False
+    def is_hovered(self,pos,pressed):
+        if self.rect.collidepoint(pos):
+            if pressed[0]:
+                return False
+            return True
         return False
     

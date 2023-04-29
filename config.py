@@ -1,12 +1,15 @@
+import os
+
 WIN_WIDTH = 128 * 6
 WIN_HEIGHT = 128 * 6
 
-FPS = 60
+FPS = 90
 
 TILESIZE = 8 * 6
 
 PLAYER_LAYER = 2 #1
-PLAYER_SPEED = 4
+
+PLAYER_SPEED = 3
 
 RED = (255,0,0) #RGB
 BLACK = (0,0,0)
