@@ -18,6 +18,7 @@ class Game:
         self.character_spritesheet = Spritesheet("Assets/Entities/player.png")
         self.attack_spritesheet = Spritesheet("Assets/Objects/attacks.png")
         self.weapon_spritesheet = Spritesheet("Assets/Objects/weapons.png")
+        self.profile_spritesheet = Spritesheet("Assets/UI/profile.png")
         #self.health_spritesheet = Spritesheet("Assets\UI\hp.png")
         
         self.intro_background = pygame.image.load("Assets/map.png").convert()
@@ -35,8 +36,7 @@ class Game:
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites
 
         self.background = Background(self,self.level-1,self.area-1) #0 plains | 1 desert | 2 forest | 3 castle
-        self.player = Player(self, 7, 7,2)
-        self.arrows = []
+        self.player = Player(self, 7, 7, 0)
     def events(self):
         #game loop events
 
@@ -47,11 +47,13 @@ class Game:
                 self.running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    arrow = PlayerArrow(self, self.player.x+32,self.player.y, mouse_pos)
-                    self.arrows.append(arrow) 
+                    self.basic = BasicAttack(self, self.player.x+32,self.player.y, mouse_pos)
+                if event.button == 2:
+                    pass #special attack
+                if event.button == 3:
+                    pass #spell configuration
     def update(self):
         self.all_sprites.update()
-        
     def draw(self):
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
@@ -70,6 +72,7 @@ class Game:
     
     def game_over(self):
         pass
+
     def fade(self,width, height): 
         fade = pygame.Surface((width, height))
         fade.fill((0,0,0))
@@ -92,8 +95,6 @@ class Game:
         else:
             self.level = 1
         self.background.kill()
-        for i in self.arrows:
-            i.kill()
         self.background = Background(self,self.level-1,self.area-1)
         self.fade(WIN_WIDTH,WIN_HEIGHT)
     def intro_screen(self):
@@ -120,7 +121,7 @@ class Game:
             if play_button.is_hovered(mouse_pos, mouse_pressed):
                 play_button.image.set_alpha(255)
             else:
-                play_button.image.set_alpha(255/8)
+                play_button.image.set_alpha(255/2)
             self.screen.blit(self.intro_background, (0,0))
             self.screen.blit(title, title_rect)
             self.screen.blit(version, version_rect)

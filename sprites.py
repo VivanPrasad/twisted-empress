@@ -25,7 +25,21 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
+class Profile(pygame.sprite.Sprite):
+    def __init__(self, game):
+        self.game = game
+        self.groups = self.game.all_sprites
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.x = 10 * TILESIZE
+        self.y = 10* TILESIZE
 
+class MaxHP(pygame.sprite.Sprite):
+    pass
+
+class MaxMP(pygame.sprite.Sprite):
+    pass
+    def update(self):
+        pass
 class Player(pygame.sprite.Sprite):
     def __init__(self, game, x, y, power = 0):
         self.game = game
@@ -130,7 +144,7 @@ class Player(pygame.sprite.Sprite):
         up_left = pygame.transform.flip(up_right, True, False)
         
         self.image = locals()[self.facing]
-class PlayerArrow(pygame.sprite.Sprite):
+class BasicAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
         self.x = x
         self.y = y
@@ -139,7 +153,7 @@ class PlayerArrow(pygame.sprite.Sprite):
         self.game = game
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
-        self.groups = self.game.all_sprites
+        self.groups = self.game.attacks
         pygame.sprite.Sprite.__init__(self, self.groups)
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.speed = 7
@@ -168,7 +182,140 @@ class PlayerArrow(pygame.sprite.Sprite):
             self.kill()
         pygame.time.delay(0)
 
+class SpecialAttack(pygame.sprite.Sprite):
+    pass
        
+class Spell(pygame.sprite.Sprite):
+    pass
+
+class Enemy(pygame.sprite.Sprite):
+    pass
+    #spawn_pos
+    #health
+    #available attacks
+    #chase mechanic by getting (self.game.player.x,self.game.player.y)
+    def __init__(self, game, x=7, y=7):
+        self.game = game
+        self.health = 4
+        self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.all_sprites
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.x = x * TILESIZE
+        self.y = y * TILESIZE
+        self.width = TILESIZE
+        self.height = TILESIZE
+
+        self.image = self.game.character_spritesheet.get_sprite(1,1,self.width,self.height)
+        self.weapon = self.game.weapon_spritesheet.get_sprite(self.power*48,0,self.width,self.height)
+        
+
+        self.x_change = 0 #x_vel
+        self.y_change = 0 #y_vel
+
+        self.facing = "down"
+
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        
+    def update(self):
+        self.movement()
+
+        self.rect.x += self.x_change
+        self.rect.y += self.y_change
+        self.x += self.x_change
+        self.y += self.y_change
+        self.x_change = 0
+        self.y_change = 0
+        
+        if self.y <= 0:
+            self.rect.y = WIN_HEIGHT - 32
+            self.y = self.rect.y
+            self.game.next_level()
+
+    def movement(self):
+        player_x,player_y = self.game.player.x,self.game.player.y
+
+        self.x_change = self
+        keys = pygame.key.get_pressed()
+        
+        #print(f"({self.x_change},{self.y_change})")
+
+        if self.x_change == 0:
+            if self.y_change >= 0:
+                self.facing = "down"
+            else:
+                self.facing = "up"
+        elif self.y_change == 0:
+            if self.x_change < 0:
+                self.facing = "left"
+            else:
+                self.facing = "right"
+        else:
+            if self.y_change > 0:
+                if self.x_change < 0:
+                    self.facing = "down_left"
+                else:
+                    self.facing = "down_right"
+            else:
+                if self.x_change < 0:
+                    self.facing = "up_left"
+                else:
+                    self.facing = "up_right"
+    def handle_weapon(self):
+        pass
+
+class Projectile(pygame.sprite.Sprite):
+    pass
+
+class Boss(pygame.sprite.Sprite):
+    pass
+
+# Area 1 Enemies
+class Thief(Enemy):
+    pass
+
+class Archer(Enemy):
+    pass
+
+# Area 2 Enemies
+class Defender(Enemy):
+    pass
+
+class Sentry(Enemy):
+    pass
+
+class Detector(Enemy):
+    pass
+
+# Area 3 Enemies
+
+class Apprentice(Enemy):
+    pass
+
+class Warrior(Enemy):
+    pass
+
+# Area 4 Enemies
+
+class Angel(Enemy):
+    pass
+
+class Guard(Enemy):
+    pass
+
+
+class Ninja(Boss):
+    pass
+
+class Guardian(Boss):
+    pass
+
+class Wizard(Boss):
+    pass
+
+class Prince(Boss):
+    pass
 
 ##############################################################
 
