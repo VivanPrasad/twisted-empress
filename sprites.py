@@ -153,7 +153,7 @@ class BasicAttack(pygame.sprite.Sprite):
         self.game = game
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
-        self.groups = self.game.attacks
+        self.groups = self.game.all_sprites
         pygame.sprite.Sprite.__init__(self, self.groups)
         mouse_x, mouse_y = pygame.mouse.get_pos()
         self.speed = 7
@@ -181,9 +181,43 @@ class BasicAttack(pygame.sprite.Sprite):
         if self.y > WIN_HEIGHT:
             self.kill()
         pygame.time.delay(0)
-
 class SpecialAttack(pygame.sprite.Sprite):
-    pass
+    def __init__(self,game,x,y,mouse_pos) -> None:
+        self.x = x
+        self.y = y
+        self.width = TILESIZE
+        self.height = TILESIZE
+        self.game = game
+
+        self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.all_sprites
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.speed = 7
+        self.angle = atan2(y-mouse_y,x-mouse_x)
+        self.x_vel = cos(self.angle) * self.speed
+        self.y_vel = sin(self.angle) * self.speed
+        
+        self.image = self.game.attack_spritesheet.get_sprite(48*self.game.player.power,48,self.width,self.height)
+        
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        
+
+        angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)-90
+        self.arrow_copy = pygame.transform.rotate(self.image,angle)
+        self.image = self.arrow_copy
+    def update(self):
+        self.x -= self.x_vel
+        self.y -= self.y_vel
+        self.rect.x = self.x
+        self.rect.y = self.y
+        if self.x > WIN_WIDTH:
+            self.kill()
+        if self.y > WIN_HEIGHT:
+            self.kill()
+        pygame.time.delay(0)
        
 class Spell(pygame.sprite.Sprite):
     pass

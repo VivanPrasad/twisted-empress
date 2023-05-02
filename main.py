@@ -36,7 +36,7 @@ class Game:
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites
 
         self.background = Background(self,self.level-1,self.area-1) #0 plains | 1 desert | 2 forest | 3 castle
-        self.player = Player(self, 7, 7, 0)
+        self.player = Player(self, 7, 7, 1)
     def events(self):
         #game loop events
 
@@ -48,10 +48,8 @@ class Game:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     self.basic = BasicAttack(self, self.player.x+32,self.player.y, mouse_pos)
-                if event.button == 2:
-                    pass #special attack
-                if event.button == 3:
-                    pass #spell configuration
+                else:
+                    self.special = SpecialAttack(self, self.player.x+32,self.player.y, mouse_pos)
     def update(self):
         self.all_sprites.update()
     def draw(self):
