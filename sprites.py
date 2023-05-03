@@ -26,27 +26,61 @@ class Background(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
 class Profile(pygame.sprite.Sprite):
-    def __init__(self, game):
+    def __init__(self, player):
+        self.player = player
+        self._layer = 6
+        self.groups = self.player.game.all_sprites
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        hp_bar = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(0,0,336,192))
+        hp = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*4,192,336,192),5)
+        mp_bar = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*4,192*2,336,192))
+        mp = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*3,192*3,336,192))
+        xp_bar = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*2,192*4,336,192))
+        xp = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*5,192*5,336,192))
+        self.x = 9 * TILESIZE
+        self.y = 12 * TILESIZE
+        self.image = self.player.game.profile_spritesheet.get_sprite(336*self.player.power,192*6,56*6,32*6)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+class Image(pygame.sprite.Sprite):
+    def __init__(self,game, x, y, image,layer = 4):
         self.game = game
+        self._layer = layer
         self.groups = self.game.all_sprites
         pygame.sprite.Sprite.__init__(self, self.groups)
-        self.x = 10 * TILESIZE
-        self.y = 10* TILESIZE
-
-class MaxHP(pygame.sprite.Sprite):
-    pass
-
-class MaxMP(pygame.sprite.Sprite):
-    pass
-    def update(self):
-        pass
+        self.x = x
+        self.y = y
+        self.image = image
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
 class Player(pygame.sprite.Sprite):
     def __init__(self, game, x, y, power = 0):
         self.game = game
         self.power = power
 
+        self.profile = Profile(self)
+        
+        self.stat_tree = {
+            0:[], #Lionheart Stat Tree
+            1:[], #Odyssey Stat Tree
+            2:[]  #Acuity Stat Tree
+        }
+        self.level = 1
         self.health = 4
         self.max_health = 4
+        self.mana = 3
+        self.max_mana = 3
+        self.xp = 0
+        self.max_xp = self.level * 2 + 6
+
+        print(f'''
+        level:{self.level}
+        health:{self.health}/{self.max_health}
+        mana:{self.mana}/{self.max_mana}
+        xp:{self.xp}/{self.max_xp}
+        ''')
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.all_sprites
@@ -70,14 +104,12 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.animate()
         self.movement()
-
         self.rect.x += self.x_change
         self.rect.y += self.y_change
-        self.x += self.x_change
-        self.y += self.y_change
+        self.x = self.rect.x
+        self.y = self.rect.y
         self.x_change = 0
         self.y_change = 0
-        
         if self.y <= 0:
             self.rect.y = WIN_HEIGHT - 32
             self.y = self.rect.y
@@ -101,7 +133,6 @@ class Player(pygame.sprite.Sprite):
             self.x_change -= (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
         if keys[pygame.K_d]:
             self.x_change += (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
-        #print(f"({self.x_change},{self.y_change})")
 
         if self.x_change == 0:
             if self.y_change >= 0:
@@ -167,7 +198,7 @@ class BasicAttack(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
         
-
+        self.current_level = self.game.level
         angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)-90
         self.arrow_copy = pygame.transform.rotate(self.image,angle)
         self.image = self.arrow_copy
@@ -176,9 +207,11 @@ class BasicAttack(pygame.sprite.Sprite):
         self.y -= self.y_vel
         self.rect.x = self.x
         self.rect.y = self.y
-        if self.x > WIN_WIDTH:
+        if self.x > WIN_WIDTH or self.x < -TILESIZE:
             self.kill()
-        if self.y > WIN_HEIGHT:
+        if self.y > WIN_HEIGHT or self.y < -TILESIZE:
+            self.kill()
+        if self.game.level != self.current_level:
             self.kill()
         pygame.time.delay(0)
 class SpecialAttack(pygame.sprite.Sprite):
@@ -338,6 +371,7 @@ class Angel(Enemy):
 class Guard(Enemy):
     pass
 
+#BOSSES
 
 class Ninja(Boss):
     pass
