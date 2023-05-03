@@ -22,7 +22,7 @@ class Game:
         #self.health_spritesheet = Spritesheet("Assets\UI\hp.png")
         
         self.intro_background = pygame.image.load("Assets/map.png").convert()
-        self.intro_background.set_alpha(100)
+        self.intro_background.set_alpha(25)
 
         self.level = 1
         self.area = 1
@@ -58,7 +58,6 @@ class Game:
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
         self.profile.draw(self.screen)
-        self.screen.blit(self.player.weapon_copy,(self.player.x+32,self.player.y))
         self.clock.tick(FPS)
         pygame.display.update()
     
@@ -81,8 +80,9 @@ class Game:
             self.playing = False
             self.screen.blit(fade, (0,0))
             pygame.display.update()
-            pygame.time.delay(3)
+            pygame.time.delay(5)
             self.playing = True
+            
     def next_level(self):
         if self.level == 5:
             if self.area < 4:
@@ -96,13 +96,16 @@ class Game:
             self.level = 1
         self.background.kill()
         self.background = Background(self,self.level-1,self.area-1)
+        if self.level == 5:
+            self.background.image.set_alpha(180)
+        else:
+            self.background.image.set_alpha(255)
         self.fade()
     def intro_screen(self):
-
         title = self.title_font.render('Twisted Empress', True, BLACK)
         title_rect = title.get_rect(x=WIN_WIDTH/2-160,y=WIN_HEIGHT/2-170)
         play_button = Button(WIN_WIDTH/2-50,WIN_HEIGHT/2-50,100,50,WHITE,BLACK,'Play',32)
-        
+
         version = self.font.render('v0.0.1', True, BLACK)
         version_rect = version.get_rect(x=WIN_WIDTH-90,y=WIN_HEIGHT-50)
 
@@ -136,14 +139,16 @@ class Game:
         lionheart = self.character_spritesheet.get_sprite(0,48*3,TILESIZE*2,TILESIZE).convert()
         odyssey = self.character_spritesheet.get_sprite(48*2,48*3,TILESIZE*2,TILESIZE).convert()
         acuity = self.character_spritesheet.get_sprite(96*2,48*3,TILESIZE*2,TILESIZE).convert()
+
+        character = [lionheart,odyssey,acuity]
         quote = self.font.render('So much to do... so little time.', True, WHITE)
         quote2 = self.font.render('What is it that you seek?', True, WHITE)
 
-        
-        button1 = Button(58,128*4,190,50,(94, 253, 247),(50,49,59),'Power of Lionheart',20)
-        button2 = Button(274,128*4,190,50,(253, 254, 137),(50,49,59),'Power of Odyssey',20)
-        button3 = Button(494,128*4,190,50,(255, 93, 204),(50,49,59),'Power of Acuity',20)
+        button1 = Button(58,128*3.7,190,50,(94, 253, 247),(50,49,59),'Power of Lionheart',20)
+        button2 = Button(274,128*3.7,190,50,(253, 254, 137),(50,49,59),'Power of Odyssey',20)
+        button3 = Button(494,128*3.7,190,50,(255, 93, 204),(50,49,59),'Power of Acuity',20)
         buttons = [button1,button2,button3]
+    
         power_select = True
         while power_select == True:
             for event in pygame.event.get():
@@ -154,6 +159,7 @@ class Game:
             mouse_pressed = pygame.mouse.get_pressed()
             
             self.screen.fill(BLACK)
+
             self.screen.blit(quote, (WIN_WIDTH/4,96))
             self.screen.blit(quote2, (WIN_WIDTH/3.5,96+72))
 
@@ -171,8 +177,10 @@ class Game:
                     self.player_power = buttons.index(button)
                 if button.is_hovered(mouse_pos, mouse_pressed):
                     button.image.set_alpha(255)
+                    character[buttons.index(button)].set_alpha(255)
                 else:
-                    button.image.set_alpha(200)
+                    button.image.set_alpha(255/1.5)
+                    character[buttons.index(button)].set_alpha(255/2)
             self.clock.tick(FPS)
             pygame.display.update()
         if self.running:

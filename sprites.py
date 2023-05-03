@@ -25,25 +25,37 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
-class Profile(pygame.sprite.Sprite):
+class Profile(pygame.sprite.Sprite): #Profile Handler for Player
     def __init__(self, player):
         self.player = player
         self._layer = 6
         self.groups = self.player.game.all_sprites
         pygame.sprite.Sprite.__init__(self, self.groups)
-        hp_bar = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(0,0,336,192))
-        hp = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*4,192,336,192),5)
-        mp_bar = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*4,192*2,336,192))
-        mp = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*3,192*3,336,192))
-        xp_bar = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*2,192*4,336,192))
-        xp = Image(self.player.game,9*TILESIZE,12*TILESIZE,self.player.game.profile_spritesheet.get_sprite(336*5,192*5,336,192))
         self.x = 9 * TILESIZE
         self.y = 12 * TILESIZE
+        self.max_health_bar = Image(self.player.game, self.x, self.y, self.player.game.profile_spritesheet.get_sprite(0,0,336,192))
+        self.health_bar = Image(self.player.game, self.x, self.y, self.player.game.profile_spritesheet.get_sprite(336*4,192,336,192), 5)
+        self.max_mana_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*4,192*2,336,192))
+        self.mana_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*3,192*3,336,192), 5)
+        self.max_experience_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*2,192*4,336,192))
+        self.experience_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*5,192*5,336,192))
+        
         self.image = self.player.game.profile_spritesheet.get_sprite(336*self.player.power,192*6,56*6,32*6)
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
-class Image(pygame.sprite.Sprite):
+
+    def update(self): #updates all the parts of the profile
+        self.max_health_bar = self.player.game.profile_spritesheet.get_sprite(336*(self.player.max_health / 2 - 2),0,336,192) #updates the max health based on the max health
+        self.health_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.health),192,336,192)
+        self.max_mana_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.max_mana - 3),192*2,336,192)
+        self.mana_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.mana),192*3,336,192)
+        self.max_experience_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.max_experience / 2 - 4),192*4,336,192)
+        self.experience_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.experience),192*5,336,192)
+
+
+
+class Image(pygame.sprite.Sprite): #Images without any functions or movement (just for display and updated framing, mainly UI)
     def __init__(self,game, x, y, image,layer = 4):
         self.game = game
         self._layer = layer
@@ -72,14 +84,14 @@ class Player(pygame.sprite.Sprite):
         self.max_health = 4
         self.mana = 3
         self.max_mana = 3
-        self.xp = 0
-        self.max_xp = self.level * 2 + 6
+        self.experience = 0
+        self.max_experience = self.level * 2 + 6
 
         print(f'''
         level:{self.level}
         health:{self.health}/{self.max_health}
         mana:{self.mana}/{self.max_mana}
-        xp:{self.xp}/{self.max_xp}
+        xp:{self.experience}/{self.max_experience}
         ''')
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
@@ -100,7 +112,12 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
+        self.weapon_angle = 90
+        self.weapon_copy = Image(self.game,self.x+30,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
 
+        self.dash_cooldown = 2000
+        self.last_dashed = 0
+        self.dashing = 1
     def update(self):
         self.animate()
         self.movement()
@@ -110,6 +127,7 @@ class Player(pygame.sprite.Sprite):
         self.y = self.rect.y
         self.x_change = 0
         self.y_change = 0
+        #self.image.set_alpha(random.randint(0,255))
         if self.y <= 0:
             self.rect.y = WIN_HEIGHT - 32
             self.y = self.rect.y
@@ -134,32 +152,45 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_d]:
             self.x_change += (PLAYER_SPEED) if self.y_change == 0 else (cos(radians(45)) * PLAYER_SPEED)
 
+        self.x_change *= self.dashing
+        self.y_change *= self.dashing
+
+        if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 8:
+            self.dashing = 1
+
+        if keys[pygame.K_SPACE]:
+            self.dash()
         if self.x_change == 0:
-            if self.y_change >= 0:
+            if self.y_change > 0:
                 self.facing = "down"
-            else:
+            elif self.y_change < 0:
                 self.facing = "up"
         elif self.y_change == 0:
             if self.x_change < 0:
                 self.facing = "left"
-            else:
+            elif self.x_change >0:
                 self.facing = "right"
         else:
             if self.y_change > 0:
                 if self.x_change < 0:
                     self.facing = "down_left"
-                else:
+                elif self.x_change > 0:
                     self.facing = "down_right"
             else:
                 if self.x_change < 0:
                     self.facing = "up_left"
-                else:
+                elif self.x_change > 0:
                     self.facing = "up_right"
+    
     def handle_weapon(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-
-        angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)
-        self.weapon_copy = pygame.transform.rotate(self.weapon,angle)
+        self.weapon_angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)
+        self.weapon_copy.image = pygame.transform.rotate(self.weapon,self.weapon_angle)
+        self.weapon_copy.x = self.x + 32
+        self.weapon_copy.y = self.y
+        self.weapon_copy.rect.x = self.x + 32
+        self.weapon_copy.rect.y = self.y
+    
     def animate(self):
         self.handle_weapon()
         down = self.game.character_spritesheet.get_sprite(0,self.power*48, self.width, self.height)
@@ -175,6 +206,12 @@ class Player(pygame.sprite.Sprite):
         up_left = pygame.transform.flip(up_right, True, False)
         
         self.image = locals()[self.facing]
+    
+    def dash(self):
+        if (pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown or self.last_dashed == 0) and self.mana > 0 and (self.x_change != 0 or self.y_change != 0):
+            self.dashing = 3
+            self.mana -= 1
+            self.last_dashed = pygame.time.get_ticks()
 class BasicAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
         self.x = x
@@ -226,7 +263,7 @@ class SpecialAttack(pygame.sprite.Sprite):
         self.groups = self.game.all_sprites
         pygame.sprite.Sprite.__init__(self, self.groups)
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        self.speed = 7
+        self.speed = 10
         self.angle = atan2(y-mouse_y,x-mouse_x)
         self.x_vel = cos(self.angle) * self.speed
         self.y_vel = sin(self.angle) * self.speed
