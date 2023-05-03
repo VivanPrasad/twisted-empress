@@ -162,6 +162,7 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 8:
             self.dashing = 1
+            self.game.screen.blit(self.image,(self.x-6,self.y-6))
 
         if keys[pygame.K_SPACE]:
             self.dash()
@@ -214,7 +215,7 @@ class Player(pygame.sprite.Sprite):
     
     def dash(self):
         if (pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown or self.last_dashed == 0) and self.mana > 0 and (self.x_change != 0 or self.y_change != 0):
-            self.dashing = 3
+            self.dashing = 4
             self.mana -= 1
             self.last_dashed = pygame.time.get_ticks()
 class BasicAttack(pygame.sprite.Sprite):
@@ -236,6 +237,9 @@ class BasicAttack(pygame.sprite.Sprite):
         
         self.image = self.game.attack_spritesheet.get_sprite(48*self.game.player.power,0,self.width,self.height)
         
+        if self.game.player.power == 0:
+            self.image = self.game.attack_spritesheet.get_sprite(0,96,self.width*2,self.height)
+        
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
@@ -244,6 +248,7 @@ class BasicAttack(pygame.sprite.Sprite):
         angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)-90
         self.arrow_copy = pygame.transform.rotate(self.image,angle)
         self.image = self.arrow_copy
+        self.alpha = 255
     def update(self):
         self.x -= self.x_vel
         self.y -= self.y_vel
@@ -255,6 +260,14 @@ class BasicAttack(pygame.sprite.Sprite):
             self.kill()
         if self.game.level != self.current_level:
             self.kill()
+        if self.game.player.power == 0:
+            self.x_vel *= 0.93
+            self.y_vel *= 0.93
+            self.alpha -= 2
+            self.image.set_alpha(self.alpha)
+            if self.alpha < 1:
+                self.kill()
+
         pygame.time.delay(0)
 class SpecialAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
@@ -263,7 +276,6 @@ class SpecialAttack(pygame.sprite.Sprite):
         self.width = TILESIZE
         self.height = TILESIZE
         self.game = game
-
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.all_sprites
         pygame.sprite.Sprite.__init__(self, self.groups)
@@ -275,6 +287,8 @@ class SpecialAttack(pygame.sprite.Sprite):
         
         self.image = self.game.attack_spritesheet.get_sprite(48*self.game.player.power,48,self.width,self.height)
         
+        if self.game.player.power == 0:
+            self.image = self.game.attack_spritesheet.get_sprite(self.width*2,96,self.width*2,self.height)
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
@@ -283,6 +297,7 @@ class SpecialAttack(pygame.sprite.Sprite):
         angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)-90
         self.arrow_copy = pygame.transform.rotate(self.image,angle)
         self.image = self.arrow_copy
+        self.alpha = 255
     def update(self):
         self.x -= self.x_vel
         self.y -= self.y_vel
@@ -292,6 +307,13 @@ class SpecialAttack(pygame.sprite.Sprite):
             self.kill()
         if self.y > WIN_HEIGHT:
             self.kill()
+        if self.game.player.power == 0:
+            self.x_vel *= 0.98
+            self.y_vel *= 0.98
+            self.alpha -= 2
+            self.image.set_alpha(self.alpha)
+            if self.alpha < 1:
+                self.kill()
         pygame.time.delay(0)
        
 class Spell(pygame.sprite.Sprite):
@@ -306,7 +328,9 @@ class Enemy(pygame.sprite.Sprite):
     def __init__(self, game, x=7, y=7):
         self.game = game
         self.health = 4
-        self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
+        self.speed = 1.25
+
+        self._layer = PLAYER_LAYER+1 #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.all_sprites
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = x * TILESIZE
@@ -314,14 +338,12 @@ class Enemy(pygame.sprite.Sprite):
         self.width = TILESIZE
         self.height = TILESIZE
 
-        self.image = self.game.character_spritesheet.get_sprite(1,1,self.width,self.height)
+        self.image = self.game.enemy_spritesheet.get_sprite(0,0,self.width,self.height)
         self.weapon = self.game.weapon_spritesheet.get_sprite(self.game.player.power*48,0,self.width,self.height)
         
 
         self.x_change = 0 #x_vel
         self.y_change = 0 #y_vel
-
-        self.facing = "down"
 
         self.rect = self.image.get_rect()
         self.rect.x = self.x
@@ -336,39 +358,17 @@ class Enemy(pygame.sprite.Sprite):
         self.y += self.y_change
         self.x_change = 0
         self.y_change = 0
-        
-        if self.y <= 0:
-            self.rect.y = WIN_HEIGHT - 32
-            self.y = self.rect.y
-            self.game.next_level()
 
     def movement(self):
+        self.chase()
+    def chase(self):
         player_x,player_y = self.game.player.x,self.game.player.y
-        keys = pygame.key.get_pressed()
-        
-        #print(f"({self.x_change},{self.y_change})")
-
-        if self.x_change == 0:
-            if self.y_change >= 0:
-                self.facing = "down"
-            else:
-                self.facing = "up"
-        elif self.y_change == 0:
-            if self.x_change < 0:
-                self.facing = "left"
-            else:
-                self.facing = "right"
-        else:
-            if self.y_change > 0:
-                if self.x_change < 0:
-                    self.facing = "down_left"
-                else:
-                    self.facing = "down_right"
-            else:
-                if self.x_change < 0:
-                    self.facing = "up_left"
-                else:
-                    self.facing = "up_right"
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
+        dirvect.normalize()
+        # Move along this normalized vector towards the player at current speed.
+        dirvect.scale_to_length(self.speed)
+        self.x_change, self.y_change = dirvect.x, dirvect.y
     def handle_weapon(self):
         pass
 

@@ -16,6 +16,7 @@ class Game:
         
         self.background_spritesheet = Spritesheet("Assets/map.png")
         self.character_spritesheet = Spritesheet("Assets/Entities/player.png")
+        self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
         self.attack_spritesheet = Spritesheet("Assets/Objects/attacks.png")
         self.weapon_spritesheet = Spritesheet("Assets/Objects/weapons.png")
         self.profile_spritesheet = Spritesheet("Assets/UI/profile.png")
@@ -84,6 +85,7 @@ class Game:
             self.playing = True
             
     def next_level(self):
+        levels = []
         if self.level == 5:
             if self.area < 4:
                 self.area += 1
@@ -102,6 +104,7 @@ class Game:
             self.background.image.set_alpha(255)
         self.level_cleared = False
         self.fade()
+        Enemy(self)
     def intro_screen(self):
         title = self.title_font.render('Twisted Empress', True, BLACK)
         title_rect = title.get_rect(x=WIN_WIDTH/2-160,y=WIN_HEIGHT/2-170)
@@ -125,7 +128,7 @@ class Game:
             if play_button.is_hovered(mouse_pos, mouse_pressed):
                 play_button.image.set_alpha(255)
             else:
-                play_button.image.set_alpha(int(255/2))
+                play_button.image.set_alpha(int(255/4))
             self.screen.blit(self.intro_background, (0,0))
             self.screen.blit(title, title_rect)
             self.screen.blit(version, version_rect)
