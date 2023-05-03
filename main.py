@@ -26,7 +26,7 @@ class Game:
 
         self.level = 1
         self.area = 1
-
+        self.level_cleared = True
         self.player_power = 0
     def new(self):
         self.playing = True
@@ -100,6 +100,7 @@ class Game:
             self.background.image.set_alpha(180)
         else:
             self.background.image.set_alpha(255)
+        self.level_cleared = False
         self.fade()
     def intro_screen(self):
         title = self.title_font.render('Twisted Empress', True, BLACK)

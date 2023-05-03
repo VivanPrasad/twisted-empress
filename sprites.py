@@ -121,6 +121,11 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.animate()
         self.movement()
+        
+        self.x_change = 1 if self.x < 1 else self.x_change
+        self.x_change = -1 if self.x > WIN_WIDTH - TILESIZE - 1 else self.x_change
+        self.y_change = 1 if self.y < 1 else self.y_change
+        self.y_change = -1 if self.y > WIN_HEIGHT - TILESIZE - 1 else self.y_change
         self.rect.x += self.x_change
         self.rect.y += self.y_change
         self.x = self.rect.x
@@ -128,7 +133,7 @@ class Player(pygame.sprite.Sprite):
         self.x_change = 0
         self.y_change = 0
         #self.image.set_alpha(random.randint(0,255))
-        if self.y <= 0:
+        if self.y <= 0 and self.game.level_cleared:
             self.rect.y = WIN_HEIGHT - 32
             self.y = self.rect.y
             self.game.next_level()
