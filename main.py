@@ -124,7 +124,7 @@ class Game:
             if play_button.is_hovered(mouse_pos, mouse_pressed):
                 play_button.image.set_alpha(255)
             else:
-                play_button.image.set_alpha(255/2)
+                play_button.image.set_alpha(int(255/2))
             self.screen.blit(self.intro_background, (0,0))
             self.screen.blit(title, title_rect)
             self.screen.blit(version, version_rect)
@@ -179,8 +179,8 @@ class Game:
                     button.image.set_alpha(255)
                     character[buttons.index(button)].set_alpha(255)
                 else:
-                    button.image.set_alpha(255/1.5)
-                    character[buttons.index(button)].set_alpha(255/2)
+                    button.image.set_alpha(int(255/1.5))
+                    character[buttons.index(button)].set_alpha(int(255/2))
             self.clock.tick(FPS)
             pygame.display.update()
         if self.running:

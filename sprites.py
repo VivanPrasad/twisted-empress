@@ -310,7 +310,7 @@ class Enemy(pygame.sprite.Sprite):
         self.height = TILESIZE
 
         self.image = self.game.character_spritesheet.get_sprite(1,1,self.width,self.height)
-        self.weapon = self.game.weapon_spritesheet.get_sprite(self.power*48,0,self.width,self.height)
+        self.weapon = self.game.weapon_spritesheet.get_sprite(self.game.player.power*48,0,self.width,self.height)
         
 
         self.x_change = 0 #x_vel
@@ -339,8 +339,6 @@ class Enemy(pygame.sprite.Sprite):
 
     def movement(self):
         player_x,player_y = self.game.player.x,self.game.player.y
-
-        self.x_change = self
         keys = pygame.key.get_pressed()
         
         #print(f"({self.x_change},{self.y_change})")
