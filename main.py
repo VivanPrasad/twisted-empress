@@ -97,7 +97,7 @@ class Game:
             
     def next_level(self):
         levels = [0,
-                  [lambda:Thief(self,8,2),lambda:Thief(self,2,2)],
+                  [lambda:Thief(self,8,2),lambda:Archer(self,2,2)],
                   [lambda:Thief(self)]
                   ]
         if self.level == 5:

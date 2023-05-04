@@ -378,7 +378,7 @@ class Enemy(pygame.sprite.Sprite):
     #health
     #available attacks
     #chase mechanic by getting (self.game.player.x,self.game.player.y)
-    def __init__(self, game, x=7, y=7):
+    def __init__(self, game, x=7, y=7, image_coords = (0,0)):
         self.game = game
         self.health = 15
         self.speed = 1.5
@@ -391,9 +391,10 @@ class Enemy(pygame.sprite.Sprite):
         self.width = TILESIZE
         self.height = TILESIZE
 
-        self.image = self.game.enemy_spritesheet.get_sprite(0,0,self.width,self.height)
-        self.weapon = self.game.weapon_spritesheet.get_sprite(self.game.player.power*48,0,self.width,self.height)
-        
+        self.image = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48,self.width,self.height)
+        self.weapon = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48+48,self.width,self.height)
+        self.weapon_angle = 90
+        self.weapon_copy = Image(self.game,self.x+20,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
         self.original_image = self.image
         
         self.hit_image = self.image.copy()
@@ -412,11 +413,12 @@ class Enemy(pygame.sprite.Sprite):
         self.alpha = 255
     def update(self):
         self.movement()
-        self.collide()
+        self.handle_weapon()
         self.rect.x += self.x_change
         self.rect.y += self.y_change
-        self.x += self.x_change
-        self.y += self.y_change
+        self.x = self.rect.x
+        self.y = self.rect.y
+        self.collide()
         self.x_change = 0
         self.y_change = 0
         if self.health < 1:
@@ -425,11 +427,20 @@ class Enemy(pygame.sprite.Sprite):
         if self.alpha < 1:
             if self.alive():
                 self.game.enemies_remaining -= 1
+            self.weapon_copy.kill()
             self.kill()
             
     def movement(self):
         self.chase()
     def collide(self):
+        if self.y > (WIN_HEIGHT - TILESIZE):
+            self.rect.y = (WIN_HEIGHT - TILESIZE)
+        elif self.y < 0:
+            self.rect.y = 0
+        if self.x > (WIN_WIDTH - TILESIZE):
+            self.rect.x = (WIN_WIDTH-TILESIZE)
+        elif self.x < 1:
+            self.rect.x = 0 
         hits = pygame.sprite.spritecollide(self,self.game.attacks, False)
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
@@ -450,7 +461,13 @@ class Enemy(pygame.sprite.Sprite):
         dirvect.scale_to_length(self.speed)
         self.x_change, self.y_change = dirvect.x, dirvect.y
     def handle_weapon(self):
-        pass
+        mouse_x, mouse_y = self.game.player.x, self.game.player.y
+        self.weapon_angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)
+        self.weapon_copy.image = pygame.transform.rotate(self.weapon,self.weapon_angle)
+        self.weapon_copy.x = self.x + 32
+        self.weapon_copy.y = self.y
+        self.weapon_copy.rect.x = self.x + 32
+        self.weapon_copy.rect.y = self.y
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self,game,x,y,target_pos,image) -> None:
@@ -506,20 +523,19 @@ class Thief(Enemy):
         if (pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown or self.last_shuriken == 0):
 
             self.last_shuriken = pygame.time.get_ticks()
-            Projectile(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
-            Projectile(self.game,self.x,self.y,(self.game.player.x-96,self.game.player.y-96),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
-            Projectile(self.game,self.x,self.y,(self.game.player.x+96,self.game.player.y+96),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
+            Projectile(self.game,self.x,self.y,(self.game.player.x-20,self.game.player.y-20),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
+            Projectile(self.game,self.x,self.y,(self.game.player.x+20,self.game.player.y+20),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
     def chase(self):
         player_x,player_y = self.game.player.x,self.game.player.y
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
         
-        if abs(dirvect.x) > 290.0 or abs(dirvect.y) > 290.0:
+        print(dirvect)
+        if abs(dirvect.x) > 400.0 or abs(dirvect.y) > 400.0:
             self.throw_shuriken()
             self.speed = 1.5
-        elif abs(dirvect.x) < 50.0 or abs(dirvect.y) < 50.0:
-            self.x_change = random.randint(-5,5)
-            self.y_change = random.randint(-5,5)
+        elif abs(dirvect.x) < 10.0 or abs(dirvect.y) < 10.0:
+            self.speed = -1
         if pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown:
             #dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
             self.speed = -2.5
@@ -530,7 +546,35 @@ class Thief(Enemy):
         
 
 class Archer(Enemy):
-    pass
+    def __init__(self, game, x,y):
+        super().__init__(game, x, y,(1,0))
+        self.shuriken_cooldown = 4500
+        self.last_shuriken = pygame.time.get_ticks() + random.randint(0,4500)
+    def throw_shuriken(self):
+        if (pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown or self.last_shuriken == 0):
+
+            self.last_shuriken = pygame.time.get_ticks()
+            Projectile(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.game.enemy_spritesheet.get_sprite(48,96,48,48))
+            Projectile(self.game,self.x,self.y,(self.game.player.x-96,self.game.player.y-96),self.game.enemy_spritesheet.get_sprite(48,96,48,48))
+            Projectile(self.game,self.x,self.y,(self.game.player.x+96,self.game.player.y+96),self.game.enemy_spritesheet.get_sprite(48,96,48,48))
+    def chase(self):
+        player_x,player_y = self.game.player.x,self.game.player.y
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
+        
+        print(dirvect)
+        if abs(dirvect.x) > 400.0 or abs(dirvect.y) > 400.0:
+            self.throw_shuriken()
+            self.speed = 1.5
+        elif abs(dirvect.x) < 10.0 or abs(dirvect.y) < 10.0:
+            self.speed = -1
+        if pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown:
+            #dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
+            self.speed = -2.5
+        dirvect.normalize()
+        # Move along this normalized vector towards the player at current speed.
+        dirvect.scale_to_length(self.speed)
+        self.x_change, self.y_change = dirvect.x, dirvect.y
 
 # Area 2 Enemies
 class Defender(Enemy):
