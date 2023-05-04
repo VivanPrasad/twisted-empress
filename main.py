@@ -29,13 +29,14 @@ class Game:
         self.area = 1
         self.level_cleared = True
         self.player_power = 0
+        self.enemies_remaining = 0
     def new(self):
         self.playing = True
 
         self.all_sprites = pygame.sprite.LayeredUpdates()
         self.walls = pygame.sprite.LayeredUpdates() #Stores all wall sprites
         self.enemies = pygame.sprite.LayeredUpdates() #Stores all enemy sprites
-        self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites
+        self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites for the player
         self.profile = pygame.sprite.LayeredUpdates() #Stores the Player's HP, MP and XP
         self.background = Background(self,self.level-1,self.area-1) #0 plains | 1 desert | 2 forest | 3 castle
         self.player = Player(self, 7, 7, self.player_power)
@@ -43,21 +44,31 @@ class Game:
         #game loop events
 
         mouse_pos = pygame.mouse.get_pos()
+        self.mouse_pos = mouse_pos
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.playing = False
                 self.running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1: #Left Click
-                    self.basic = BasicAttack(self, self.player.x+32,self.player.y, mouse_pos)
-                elif event.button == 3: #Right Click
-                    self.special = SpecialAttack(self, self.player.x+32,self.player.y, mouse_pos)
+        if pygame.mouse.get_pressed()[0]:
+            self.player.basic_attack()
+        elif pygame.mouse.get_pressed()[2]:
+            self.player.special_attack()
+        elif pygame.mouse.get_pressed()[1]: #Right Click
+            pass
+                    
     def update(self):
         self.all_sprites.update()
+        self.enemies.update()
+        self.attacks.update()
         self.profile.update()
+        
+        if self.enemies_remaining == 0:
+            self.level_cleared = True
     def draw(self):
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
+        self.enemies.draw(self.screen)
+        self.attacks.draw(self.screen)
         self.profile.draw(self.screen)
         self.clock.tick(FPS)
         pygame.display.update()
@@ -85,7 +96,10 @@ class Game:
             self.playing = True
             
     def next_level(self):
-        levels = []
+        levels = [0,
+                  [lambda:Thief(self,8,2),lambda:Thief(self,2,2)],
+                  [lambda:Thief(self)]
+                  ]
         if self.level == 5:
             if self.area < 4:
                 self.area += 1
@@ -102,9 +116,18 @@ class Game:
             self.background.image.set_alpha(180)
         else:
             self.background.image.set_alpha(255)
-        self.level_cleared = False
+        
         self.fade()
-        Enemy(self)
+
+        self.enemies_remaining = 0
+        self.level_cleared = False
+        try:
+            for enemy in levels[self.level-1]:
+                enemy()
+                self.enemies_remaining += 1
+        except:
+            pass
+        
     def intro_screen(self):
         title = self.title_font.render('Twisted Empress', True, BLACK)
         title_rect = title.get_rect(x=WIN_WIDTH/2-160,y=WIN_HEIGHT/2-170)
@@ -139,8 +162,8 @@ class Game:
             self.fade()
             self.power_select()
     def power_select(self):
-        # Power Select
-        lionheart = self.character_spritesheet.get_sprite(0,48*3,TILESIZE*2,TILESIZE).convert()
+        # Power Select Menu
+        lionheart = self.character_spritesheet.get_sprite(0,48*3,TILESIZE*2,TILESIZE).convert() #converts the images to save space
         odyssey = self.character_spritesheet.get_sprite(48*2,48*3,TILESIZE*2,TILESIZE).convert()
         acuity = self.character_spritesheet.get_sprite(96*2,48*3,TILESIZE*2,TILESIZE).convert()
 
@@ -178,7 +201,7 @@ class Game:
             for button in buttons:
                 if button.is_pressed(mouse_pos, mouse_pressed):
                     power_select = False
-                    self.player_power = buttons.index(button)
+                    self.player_power = buttons.index(button) #gives the chosen power via button index (which aligns with the power enumeration)
                 if button.is_hovered(mouse_pos, mouse_pressed):
                     button.image.set_alpha(255)
                     character[buttons.index(button)].set_alpha(255)

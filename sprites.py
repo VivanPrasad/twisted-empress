@@ -28,38 +28,36 @@ class Background(pygame.sprite.Sprite):
 class Profile(pygame.sprite.Sprite): #Profile Handler for Player
     def __init__(self, player):
         self.player = player
-        self._layer = 6
-        self.groups = self.player.game.all_sprites
+        self._layer = 4
+        self.groups = self.player.game.profile
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = 9 * TILESIZE
         self.y = 12 * TILESIZE
-        self.max_health_bar = Image(self.player.game, self.x, self.y, self.player.game.profile_spritesheet.get_sprite(0,0,336,192))
-        self.health_bar = Image(self.player.game, self.x, self.y, self.player.game.profile_spritesheet.get_sprite(336*4,192,336,192), 5)
-        self.max_mana_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*4,192*2,336,192))
-        self.mana_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*3,192*3,336,192), 5)
+        self.max_health_bar = Image(self.player.game, self.x, self.y, self.player.game.profile_spritesheet.get_sprite(336,0,336,192),5) #gets the max health from the profile UI spritesheet
+        self.health_bar = Image(self.player.game, self.x, self.y, self.player.game.profile_spritesheet.get_sprite(336*4,192,336,192), 5) #gets the current health from the profile UI spritesheet
+        self.max_mana_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*4,192*2,336,192)) #gets the max mana from the profile UI spritesheet
+        self.mana_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*3,192*3,336,192), 5) #gets the max mana from the profile UI spritesheet
         self.max_experience_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*2,192*4,336,192))
         self.experience_bar = Image(self.player.game,self.x,self.y,self.player.game.profile_spritesheet.get_sprite(336*5,192*5,336,192))
         
-        self.image = self.player.game.profile_spritesheet.get_sprite(336*self.player.power,192*6,56*6,32*6)
+        self.image = self.player.game.profile_spritesheet.get_sprite(336*self.player.power,192*6,56*6,32*6) #gets the correct player to display in the profile UI
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
 
     def update(self): #updates all the parts of the profile
-        self.max_health_bar = self.player.game.profile_spritesheet.get_sprite(336*(self.player.max_health / 2 - 2),0,336,192) #updates the max health based on the max health
+        self.max_health_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.max_health / 2 - 2),0,336,192) #updates the max health based on the max health
         self.health_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.health),192,336,192)
         self.max_mana_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.max_mana - 3),192*2,336,192)
-        self.mana_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.mana),192*3,336,192)
+        self.mana_bar.image = self.player.game.profile_spritesheet.get_sprite(336*floor(self.player.mana),192*3,336,192)
         self.max_experience_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.max_experience / 2 - 4),192*4,336,192)
         self.experience_bar.image = self.player.game.profile_spritesheet.get_sprite(336*(self.player.experience),192*5,336,192)
-
-
 
 class Image(pygame.sprite.Sprite): #Images without any functions or movement (just for display and updated framing, mainly UI)
     def __init__(self,game, x, y, image,layer = 4):
         self.game = game
         self._layer = layer
-        self.groups = self.game.all_sprites
+        self.groups = self.game.profile
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = x
         self.y = y
@@ -80,10 +78,11 @@ class Player(pygame.sprite.Sprite):
             2:[]  #Acuity Stat Tree
         }
         self.level = 1
-        self.health = 4
-        self.max_health = 4
-        self.mana = 3
-        self.max_mana = 3
+        self.max_health = 22
+        self.health = self.max_health
+        
+        self.max_mana = 5
+        self.mana = self.max_mana
         self.experience = 0
         self.max_experience = self.level * 2 + 6
 
@@ -116,20 +115,23 @@ class Player(pygame.sprite.Sprite):
         self.weapon_copy = Image(self.game,self.x+30,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
 
         self.dash_cooldown = 2000
+        self.basic_cooldown = 700 - 100*self.power
+        self.special_cooldown = 1000
         self.last_dashed = 0
+        self.last_basic = 0
         self.dashing = 1
+        self.last_special = 0
+
+        self.hit_cooldown = 500
+        self.last_hit = 0
     def update(self):
         self.animate()
         self.movement()
-        
-        self.x_change = 1 if self.x < 1 else self.x_change
-        self.x_change = -1 if self.x > WIN_WIDTH - TILESIZE - 1 else self.x_change
-        self.y_change = 1 if self.y < 1 else self.y_change
-        self.y_change = -1 if self.y > WIN_HEIGHT - TILESIZE - 1 else self.y_change
         self.rect.x += self.x_change
         self.rect.y += self.y_change
         self.x = self.rect.x
         self.y = self.rect.y
+        self.collide()
         self.x_change = 0
         self.y_change = 0
         #self.image.set_alpha(random.randint(0,255))
@@ -162,7 +164,6 @@ class Player(pygame.sprite.Sprite):
 
         if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 8:
             self.dashing = 1
-            self.game.screen.blit(self.image,(self.x-6,self.y-6))
 
         if keys[pygame.K_SPACE]:
             self.dash()
@@ -187,6 +188,28 @@ class Player(pygame.sprite.Sprite):
                     self.facing = "up_left"
                 elif self.x_change > 0:
                     self.facing = "up_right"
+
+    def collide(self):
+        if self.y > (WIN_HEIGHT - TILESIZE):
+            self.rect.y = (WIN_HEIGHT - TILESIZE)
+        elif self.y < 0:
+            self.rect.y = 0
+        if self.x > (WIN_WIDTH - TILESIZE):
+            self.rect.x = (WIN_WIDTH-TILESIZE)
+        elif self.x < 1:
+            self.rect.x = 0 
+        
+        hits = pygame.sprite.spritecollide(self,self.game.enemies, False)
+        if hits:
+            if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
+                self.last_hit = pygame.time.get_ticks()
+                self.health -= 1
+                print(self.health)
+        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
+            self.image.set_alpha(100)
+        else:
+            self.image.set_alpha(255)
+
     
     def handle_weapon(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -214,10 +237,24 @@ class Player(pygame.sprite.Sprite):
         self.image = locals()[self.facing]
     
     def dash(self):
-        if (pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown or self.last_dashed == 0) and self.mana > 0 and (self.x_change != 0 or self.y_change != 0):
+        if (pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown or self.last_dashed == 0) and self.mana >= 1 and (self.x_change != 0 or self.y_change != 0):
             self.dashing = 4
             self.mana -= 1
             self.last_dashed = pygame.time.get_ticks()
+    def basic_attack(self):
+        if (pygame.time.get_ticks() - self.last_basic > self.basic_cooldown or self.last_basic == 0):
+            self.last_basic = pygame.time.get_ticks()
+            if int(self.mana + 0.25) < self.max_mana:
+                self.mana += 0.25
+            else:
+                self.mana = self.max_mana
+            self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+    def special_attack(self):
+        if (pygame.time.get_ticks() - self.last_special > self.special_cooldown or self.last_special == 0) and self.mana >= 1:
+            self.last_special = pygame.time.get_ticks()
+            self.mana -= 1
+            self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+
 class BasicAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
         self.x = x
@@ -227,11 +264,11 @@ class BasicAttack(pygame.sprite.Sprite):
         self.game = game
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
-        self.groups = self.game.all_sprites
+        self.groups = self.game.attacks
         pygame.sprite.Sprite.__init__(self, self.groups)
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+        self.mouse_x, self.mouse_y = mouse_pos
         self.speed = 7
-        self.angle = atan2(y-mouse_y,x-mouse_x)
+        self.angle = atan2(y-self.mouse_y,x-self.mouse_x)
         self.x_vel = cos(self.angle) * self.speed
         self.y_vel = sin(self.angle) * self.speed
         
@@ -245,11 +282,13 @@ class BasicAttack(pygame.sprite.Sprite):
         self.rect.y = self.y
         
         self.current_level = self.game.level
-        angle = (180 / pi) * -atan2(mouse_y-self.y, mouse_x-self.x)-90
-        self.arrow_copy = pygame.transform.rotate(self.image,angle)
+        self.angle = (180 / pi) * -atan2(self.mouse_y-self.y, self.mouse_x-self.x)-90
+        self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
         self.image = self.arrow_copy
         self.alpha = 255
+        self.animation_frame = 0
     def update(self):
+        self.collide()
         self.x -= self.x_vel
         self.y -= self.y_vel
         self.rect.x = self.x
@@ -261,14 +300,28 @@ class BasicAttack(pygame.sprite.Sprite):
         if self.game.level != self.current_level:
             self.kill()
         if self.game.player.power == 0:
-            self.x_vel *= 0.93
-            self.y_vel *= 0.93
-            self.alpha -= 2
-            self.image.set_alpha(self.alpha)
-            if self.alpha < 1:
+            if not self.animation_frame > 2:
+                self.x = self.game.player.x - self.x_vel * self.speed * 2 - 20
+                self.y = self.game.player.y - self.y_vel * self.speed * 2 - 20
+            else:
+                self.x_vel = 0
+                self.y_vel = 0
+            self.alpha -= 3
+            if self.animation_frame < 5:
+                self.animation_frame += 0.08
+            else:
                 self.kill()
-
+            self.image = self.image = self.game.attack_spritesheet.get_sprite(0,96+(48*floor(self.animation_frame)),self.width*2,self.height)
+            self.attack_copy = pygame.transform.rotate(self.image,self.angle)
+            self.image = self.attack_copy
+            self.image.set_alpha(int(self.alpha))
+            #if self.alpha < 1: self.kill()
         pygame.time.delay(0)
+    def collide(self):
+        hits = pygame.sprite.spritecollide(self,self.game.enemies, False)
+        if hits:
+            if self.game.player.power != 0:
+                self.kill()
 class SpecialAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
         self.x = x
@@ -277,9 +330,9 @@ class SpecialAttack(pygame.sprite.Sprite):
         self.height = TILESIZE
         self.game = game
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
-        self.groups = self.game.all_sprites
+        self.groups = self.game.attacks
         pygame.sprite.Sprite.__init__(self, self.groups)
-        mouse_x, mouse_y = pygame.mouse.get_pos()
+        mouse_x, mouse_y = mouse_pos
         self.speed = 10
         self.angle = atan2(y-mouse_y,x-mouse_x)
         self.x_vel = cos(self.angle) * self.speed
@@ -327,11 +380,11 @@ class Enemy(pygame.sprite.Sprite):
     #chase mechanic by getting (self.game.player.x,self.game.player.y)
     def __init__(self, game, x=7, y=7):
         self.game = game
-        self.health = 4
-        self.speed = 1.25
+        self.health = 15
+        self.speed = 1.5
 
-        self._layer = PLAYER_LAYER+1 #Bottom BG, Enemies, Attacks, UI
-        self.groups = self.game.all_sprites
+        self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.enemies
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = x * TILESIZE
         self.y = y * TILESIZE
@@ -341,6 +394,12 @@ class Enemy(pygame.sprite.Sprite):
         self.image = self.game.enemy_spritesheet.get_sprite(0,0,self.width,self.height)
         self.weapon = self.game.weapon_spritesheet.get_sprite(self.game.player.power*48,0,self.width,self.height)
         
+        self.original_image = self.image
+        
+        self.hit_image = self.image.copy()
+        var = pygame.PixelArray(self.hit_image)
+        var.replace(pygame.Color(255,255,255), pygame.Color(255,0,0))
+        del var
 
         self.x_change = 0 #x_vel
         self.y_change = 0 #y_vel
@@ -348,19 +407,40 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
-        
+        self.last_hit = 0
+        self.hit_cooldown = 300
+        self.alpha = 255
     def update(self):
         self.movement()
-
+        self.collide()
         self.rect.x += self.x_change
         self.rect.y += self.y_change
         self.x += self.x_change
         self.y += self.y_change
         self.x_change = 0
         self.y_change = 0
-
+        if self.health < 1:
+            self.alpha -= 10
+            self.image.set_alpha(self.alpha)
+        if self.alpha < 1:
+            if self.alive():
+                self.game.enemies_remaining -= 1
+            self.kill()
+            
     def movement(self):
         self.chase()
+    def collide(self):
+        hits = pygame.sprite.spritecollide(self,self.game.attacks, False)
+        if hits:
+            if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
+                self.last_hit = pygame.time.get_ticks()
+                self.health -= 1
+                print(self.health)
+        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
+            self.image = self.hit_image
+        else:
+            self.image = self.original_image
+
     def chase(self):
         player_x,player_y = self.game.player.x,self.game.player.y
         # Find direction vector (dx, dy) between enemy and player.
@@ -373,14 +453,81 @@ class Enemy(pygame.sprite.Sprite):
         pass
 
 class Projectile(pygame.sprite.Sprite):
-    pass
+    def __init__(self,game,x,y,target_pos,image) -> None:
+        self.x = x
+        self.y = y
+        self.width = TILESIZE
+        self.height = TILESIZE
+        self.game = game
+
+        self._layer = PLAYER_LAYER+1 #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.enemies
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.target_x, self.target_y = target_pos
+        self.speed = 4
+        self.angle = atan2(y-self.target_y,x-self.target_x)
+        self.x_vel = cos(self.angle) * self.speed
+        self.y_vel = sin(self.angle) * self.speed
+        
+        self.image = image
+        
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        
+        self.current_level = self.game.level
+        self.angle = (180 / pi) * -atan2(self.target_y-self.y, self.target_x-self.x)-90
+        self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
+        self.image = self.arrow_copy
+        self.animation_frame = 0
+    def update(self):
+        self.x -= self.x_vel
+        self.y -= self.y_vel
+        self.rect.x = self.x
+        self.rect.y = self.y
+        if self.x > WIN_WIDTH or self.x < -TILESIZE:
+            self.kill()
+        if self.y > WIN_HEIGHT or self.y < -TILESIZE:
+            self.kill()
+        if self.game.level != self.current_level:
+            self.kill()
+        pygame.time.delay(0)
 
 class Boss(pygame.sprite.Sprite):
     pass
 
 # Area 1 Enemies
 class Thief(Enemy):
-    pass
+    def __init__(self, game, x=7, y=7):
+        super().__init__(game, x, y)
+        self.shuriken_cooldown = 4500
+        self.last_shuriken = pygame.time.get_ticks() + random.randint(0,4500)
+    def throw_shuriken(self):
+        if (pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown or self.last_shuriken == 0):
+
+            self.last_shuriken = pygame.time.get_ticks()
+            Projectile(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
+            Projectile(self.game,self.x,self.y,(self.game.player.x-96,self.game.player.y-96),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
+            Projectile(self.game,self.x,self.y,(self.game.player.x+96,self.game.player.y+96),self.game.enemy_spritesheet.get_sprite(0,48,48,48))
+    def chase(self):
+        player_x,player_y = self.game.player.x,self.game.player.y
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
+        
+        if abs(dirvect.x) > 290.0 or abs(dirvect.y) > 290.0:
+            self.throw_shuriken()
+            self.speed = 1.5
+        elif abs(dirvect.x) < 50.0 or abs(dirvect.y) < 50.0:
+            self.x_change = random.randint(-5,5)
+            self.y_change = random.randint(-5,5)
+        if pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown:
+            #dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
+            self.speed = -2.5
+        dirvect.normalize()
+        # Move along this normalized vector towards the player at current speed.
+        dirvect.scale_to_length(self.speed)
+        self.x_change, self.y_change = dirvect.x, dirvect.y
+        
 
 class Archer(Enemy):
     pass
