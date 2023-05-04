@@ -4,7 +4,7 @@ from config import *
 import sys
 
 class Game:
-    def __init__(self) -> None:
+    def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT)) #Displays the screen size properly
         self.title = pygame.display.set_caption("Twisted Empress")
@@ -30,7 +30,10 @@ class Game:
         self.level_cleared = True
         self.player_power = 0
         self.enemies_remaining = 0
+
+        self.new()
     def new(self):
+        self.intro_screen()
         self.playing = True
 
         self.all_sprites = pygame.sprite.LayeredUpdates()
@@ -40,6 +43,12 @@ class Game:
         self.profile = pygame.sprite.LayeredUpdates() #Stores the Player's HP, MP and XP
         self.background = Background(self,self.level-1,self.area-1) #0 plains | 1 desert | 2 forest | 3 castle
         self.player = Player(self, 7, 7, self.player_power)
+
+        while self.running == True:
+            self.main()
+            self.game_over()
+        pygame.quit()
+        sys.exit()
     def events(self):
         #game loop events
 
@@ -64,6 +73,9 @@ class Game:
         
         if self.enemies_remaining == 0:
             self.level_cleared = True
+        if self.player.health < 1:
+            self.fade()
+            self.playing = False
     def draw(self):
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
@@ -82,23 +94,40 @@ class Game:
         self.running = False
     
     def game_over(self):
-        pass
+        game_over = True
+        text = self.font.render('GAME OVER', True, WHITE)
+        text2 = self.font.render('Press R to Retry', True, WHITE)
+        while game_over == True and self.player.health == 0:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game_over = False
+                    self.running = False
+                if pygame.key.get_pressed()[pygame.K_r]:
+                    game_over = False
+                    global g
+                    g = Game()
+                    
+            self.screen.fill(BLACK)
+            self.screen.blit(text,(WIN_WIDTH/4,WIN_HEIGHT/4))
+            self.screen.blit(text2,(WIN_WIDTH/5,WIN_HEIGHT/2))
+            pygame.display.update()
 
     def fade(self,width=WIN_WIDTH, height=WIN_HEIGHT): 
         fade = pygame.Surface((width, height))
+        self.playing = False
         fade.fill((0,0,0))
-        for alpha in range(0, 300):
+        for alpha in range(0, 85):
             fade.set_alpha(alpha)
-            self.playing = False
             self.screen.blit(fade, (0,0))
             pygame.display.update()
             pygame.time.delay(5)
-            self.playing = True
+        self.playing = True
             
     def next_level(self):
         levels = [0,
+                  [lambda:Thief(self),lambda:Archer(self,5,0)],
                   [lambda:Thief(self,8,2),lambda:Archer(self,2,2)],
-                  [lambda:Thief(self)]
+                  [lambda:Thief(self,3,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,5,4)]
                   ]
         if self.level == 5:
             if self.area < 4:
@@ -214,10 +243,3 @@ class Game:
             self.fade()
 
 g = Game()
-g.intro_screen()
-g.new()
-while g.running == True:
-    g.main()
-    g.game_over()
-pygame.quit()
-sys.exit()
