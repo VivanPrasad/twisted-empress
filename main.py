@@ -108,19 +108,19 @@ class Game:
                     g = Game()
                     
             self.screen.fill(BLACK)
-            self.screen.blit(text,(WIN_WIDTH/4,WIN_HEIGHT/4))
-            self.screen.blit(text2,(WIN_WIDTH/5,WIN_HEIGHT/2))
+            self.screen.blit(text,(WIN_WIDTH/3,WIN_HEIGHT/3))
+            self.screen.blit(text2,(WIN_WIDTH/3,WIN_HEIGHT/2))
             pygame.display.update()
 
     def fade(self,width=WIN_WIDTH, height=WIN_HEIGHT): 
         fade = pygame.Surface((width, height))
         self.playing = False
         fade.fill((0,0,0))
-        for alpha in range(0, 85):
+        for alpha in range(0, 80):
             fade.set_alpha(alpha)
             self.screen.blit(fade, (0,0))
             pygame.display.update()
-            pygame.time.delay(5)
+            pygame.time.delay(3)
         self.playing = True
             
     def next_level(self):

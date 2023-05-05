@@ -66,7 +66,8 @@ class Image(pygame.sprite.Sprite): #Images without any functions or movement (ju
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
-class Player(pygame.sprite.Sprite):
+
+class Player(pygame.sprite.Sprite): #The Player
     def __init__(self, game, x, y, power = 0):
         self.game = game
         self.power = power
@@ -82,17 +83,10 @@ class Player(pygame.sprite.Sprite):
         self.max_health = 4
         self.health = self.max_health
         
-        self.max_mana = 5
+        self.max_mana = 3
         self.mana = self.max_mana
         self.experience = 0
         self.max_experience = self.level * 2 + 6
-
-        print(f'''
-        level:{self.level}
-        health:{self.health}/{self.max_health}
-        mana:{self.mana}/{self.max_mana}
-        xp:{self.experience}/{self.max_experience}
-        ''')
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.all_sprites
@@ -120,11 +114,14 @@ class Player(pygame.sprite.Sprite):
         self.special_cooldown = 1000
         self.last_dashed = 0
         self.last_basic = 0
+        self.special_basic = False
         self.dashing = 1
         self.last_special = 0
 
         self.hit_cooldown = 500
         self.last_hit = 0
+
+
     def update(self):
         self.animate()
         self.movement()
@@ -205,7 +202,6 @@ class Player(pygame.sprite.Sprite):
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
                 self.last_hit = pygame.time.get_ticks()
                 self.health -= 1
-                print(self.health)
         if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
             self.image.set_alpha(100)
         else:
@@ -249,12 +245,28 @@ class Player(pygame.sprite.Sprite):
                 self.mana += 0.25
             else:
                 self.mana = self.max_mana
-            self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+            if not self.special_basic:
+                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+            elif self.power == 0:
+                self.basic = BasicAttack(self.game, self.x-32,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+45))
+                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-45))
+                self.basic = BasicAttack(self.game, self.x-32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                self.special_basic = False
     def special_attack(self):
         if (pygame.time.get_ticks() - self.last_special > self.special_cooldown or self.last_special == 0) and self.mana >= 1:
             self.last_special = pygame.time.get_ticks()
             self.mana -= 1
-            self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+            if self.power == 0:
+                self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                self.special = SpecialAttack(self.game, self.x,self.y-10, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+            elif self.power == 1:
+                self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+50))
+                self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-50))
+            elif self.power == 2:
+                self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]+50))
+                self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]-50))
 
 ############################# PLAYER ATTACKS
 
@@ -291,6 +303,8 @@ class BasicAttack(pygame.sprite.Sprite):
         self.image = self.arrow_copy
         self.alpha = 255
         self.animation_frame = 0
+
+        self.has_collided = False
     def update(self):
         self.collide()
         self.x -= self.x_vel
@@ -320,12 +334,26 @@ class BasicAttack(pygame.sprite.Sprite):
             else:
                 self.kill()
             #if self.alpha < 1: self.kill()
+        
+        if self.has_collided and self.game.player.power != 0:
+            self.image.set_alpha(self.alpha)
+            self.alpha -= 20
+            if self.alpha < 20:
+                self.kill()
         pygame.time.delay(0)
     def collide(self):
         hits = pygame.sprite.spritecollide(self,self.game.enemies, False)
         if hits:
-            if self.game.player.power != 0:
-                self.kill()
+            for hit in hits:
+                if not self.has_collided:
+                    try:
+                        hit.health -= 1
+                        print(hit.health)
+                        self.has_collided = True
+                    except:
+                        pass
+###
+
 class SpecialAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
         self.x = x
@@ -355,7 +383,12 @@ class SpecialAttack(pygame.sprite.Sprite):
         self.arrow_copy = pygame.transform.rotate(self.image,angle)
         self.image = self.arrow_copy
         self.alpha = 255
+
+        self.has_collided = False
+        if self.game.player.power == 0:
+            self.game.player.special_basic = True
     def update(self):
+        self.collide()
         self.x -= self.x_vel
         self.y -= self.y_vel
         self.rect.x = self.x
@@ -372,7 +405,17 @@ class SpecialAttack(pygame.sprite.Sprite):
             if self.alpha < 1:
                 self.kill()
         pygame.time.delay(0)
-       
+    def collide(self):
+        hits = pygame.sprite.spritecollide(self,self.game.enemies, False)
+        if hits:
+            for hit in hits:
+                if not self.has_collided:
+                    try:
+                        hit.health -= 2
+                        print(hit.health)
+                        self.has_collided = True
+                    except:
+                        pass
 class Spell(pygame.sprite.Sprite):
     pass
 
@@ -413,7 +456,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
         self.last_hit = 0
-        self.hit_cooldown = 300
+        self.hit_cooldown = 100
         self.alpha = 255
     def update(self):
         self.movement()
@@ -426,11 +469,12 @@ class Enemy(pygame.sprite.Sprite):
         self.x_change = 0
         self.y_change = 0
         if self.health < 1:
-            self.alpha -= 10
+            self.alpha -= 15
             self.image.set_alpha(self.alpha)
         if self.alpha < 1:
             if self.alive():
                 self.game.enemies_remaining -= 1
+                self.game.player.experience += 1
             self.weapon_copy.kill()
             self.kill()
             
@@ -449,8 +493,6 @@ class Enemy(pygame.sprite.Sprite):
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
                 self.last_hit = pygame.time.get_ticks()
-                self.health -= 1
-                print(self.health)
         if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
             self.image = self.hit_image
         else:
@@ -520,7 +562,7 @@ class Boss(pygame.sprite.Sprite):
 # Area 1 Enemies
 class Thief(Enemy):
     def __init__(self, game, x=7, y=7):
-        super().__init__(game, x, y)
+        super().__init__(game, x, y, (0,0))
         self.shuriken_cooldown = 4500
         self.last_shuriken = pygame.time.get_ticks() + random.randint(0,4500)
     def throw_shuriken(self):
@@ -534,7 +576,6 @@ class Thief(Enemy):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
         
-        print(dirvect)
         if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
             self.throw_shuriken()
             self.speed = 1.5
@@ -543,21 +584,25 @@ class Thief(Enemy):
         if pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown:
             #dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
             self.speed = -3
-        dirvect.normalize()
         # Move along this normalized vector towards the player at current speed.
-        dirvect.scale_to_length(self.speed)
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(random.randint(-1,1),random.randint(-1,1))
+            self.speed = 0
         self.x_change, self.y_change = dirvect.x, dirvect.y
         
 
 class Archer(Enemy):
     def __init__(self, game, x,y):
-        super().__init__(game, x, y,(1,0))
-        self.shuriken_cooldown = 4500
-        self.last_shuriken = pygame.time.get_ticks() + random.randint(0,4500)
+        super().__init__(game, x, y,(1,0)) #(1,0) is the tilemap coordinate for the Archer
+        self.arrow_cooldown = 4500
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,4500)
     def throw_shuriken(self):
-        if (pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown or self.last_shuriken == 0):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
 
-            self.last_shuriken = pygame.time.get_ticks()
+            self.last_arrow = pygame.time.get_ticks()
             Projectile(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.game.enemy_spritesheet.get_sprite(48,96,48,48))
             Projectile(self.game,self.x,self.y,(self.game.player.x-96,self.game.player.y-96),self.game.enemy_spritesheet.get_sprite(48,96,48,48))
             Projectile(self.game,self.x,self.y,(self.game.player.x+96,self.game.player.y+96),self.game.enemy_spritesheet.get_sprite(48,96,48,48))
@@ -566,20 +611,18 @@ class Archer(Enemy):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
         
-        print(dirvect)
-        if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
+        
+        if abs(dirvect.x) > 100.0 or abs(dirvect.y) > 100.0:
             self.throw_shuriken()
-            self.speed = 1.5
-        elif abs(dirvect.x) < 50.0 or abs(dirvect.y) < 50.0:
             self.speed = 1
-        if pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown:
+        if pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown:
             #dirvect = pygame.math.Vector2(player_x - self.x, player_y - self.rect.y)
             self.speed = -3
         if dirvect.x != 0 and dirvect.y != 0:
             dirvect.normalize()
             dirvect.scale_to_length(self.speed)
         else:
-            dirvect = pygame.math.Vector2(random.randint(-1,1),random.randint(-1,1))
+            dirvect = pygame.math.Vector2(0,0)
             self.speed = 0
         # Move along this normalized vector towards the player at current speed.
         
