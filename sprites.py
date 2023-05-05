@@ -89,7 +89,7 @@ class Player(pygame.sprite.Sprite): #The Player
         self.max_experience = self.level * 2 + 6
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
-        self.groups = self.game.all_sprites
+        self.groups = self.game.players
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = x * TILESIZE
         self.y = y * TILESIZE
@@ -348,7 +348,6 @@ class BasicAttack(pygame.sprite.Sprite):
                 if not self.has_collided:
                     try:
                         hit.health -= 1
-                        print(hit.health)
                         self.has_collided = True
                     except:
                         pass
@@ -398,9 +397,9 @@ class SpecialAttack(pygame.sprite.Sprite):
         if self.y > WIN_HEIGHT:
             self.kill()
         if self.game.player.power == 0:
-            self.x_vel *= 0.98
-            self.y_vel *= 0.98
-            self.alpha -= 2
+            self.x_vel *= 0.97
+            self.y_vel *= 0.97
+            self.alpha -= 3
             self.image.set_alpha(self.alpha)
             if self.alpha < 1:
                 self.kill()
@@ -411,13 +410,181 @@ class SpecialAttack(pygame.sprite.Sprite):
             for hit in hits:
                 if not self.has_collided:
                     try:
-                        hit.health -= 2
-                        print(hit.health)
+                        hit.health -= 1
                         self.has_collided = True
                     except:
                         pass
 class Spell(pygame.sprite.Sprite):
     pass
+
+################################################
+
+class HealthOrb(pygame.sprite.Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+
+        self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.drops
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.x = x
+        self.y = y
+        self.width = TILESIZE
+        self.height = TILESIZE
+
+        self.image = self.game.drops_spritesheet.get_sprite(48,0,self.width,self.height)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        target_x, target_y = random.randint(-WIN_WIDTH,WIN_WIDTH), random.randint(-WIN_HEIGHT,WIN_HEIGHT) #gets any position
+        self.speed = 2
+        self.angle = atan2(y-target_y,x-target_x)
+        self.x_vel = cos(self.angle) * self.speed
+        self.y_vel = sin(self.angle) * self.speed
+
+        self.has_collided = False
+        self.alpha = 255
+        self.on_level = self.game.level #storing information of what level the sprite is on so it can be deleted if ignored
+    def update(self):
+        self.collide()
+        self.movement()
+        self.x -= self.x_vel
+        self.y -= self.y_vel
+        self.rect.x = self.x
+        self.rect.y =self.y
+        self.x_vel *= 0.95
+        self.y_vel *= 0.95
+        if self.has_collided:
+            self.image.set_alpha(self.alpha)
+            self.alpha -= 25
+            if self.alpha < 1:
+                self.kill()
+        if self.on_level != self.game.level:
+            self.kill()
+    def movement(self):
+        pass
+    def collide(self):
+        if self.y > (WIN_HEIGHT - TILESIZE):
+            self.rect.y = (WIN_HEIGHT - TILESIZE)
+        elif self.y < 0:
+            self.rect.y = 0
+        if self.x > (WIN_WIDTH - TILESIZE):
+            self.rect.x = (WIN_WIDTH-TILESIZE)
+        elif self.x < 1:
+            self.rect.x = 0 
+        hits = pygame.sprite.spritecollide(self,self.game.players, False)
+        if hits:
+            for hit in hits:
+                try:
+                    if hit.health < hit.max_health and not self.has_collided:
+                        hit.health += 1
+                        self.has_collided = True
+                except: pass
+
+class ManaOrb(pygame.sprite.Sprite): #Mana Orbs that drop when killing an enemy
+    def __init__(self, game, x, y):
+        self.game = game
+
+        self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.drops
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.x = x
+        self.y = y
+        self.width = TILESIZE
+        self.height = TILESIZE
+
+        self.image = self.game.drops_spritesheet.get_sprite(0,0,self.width,self.height)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        target_x, target_y = random.randint(-WIN_WIDTH,WIN_WIDTH), random.randint(-WIN_HEIGHT,WIN_HEIGHT) #gets any position
+        self.speed = 2
+        self.angle = atan2(y-target_y,x-target_x)
+        self.x_vel = cos(self.angle) * self.speed
+        self.y_vel = sin(self.angle) * self.speed
+        self.on_level = self.game.level
+        self.has_collided = False
+        self.alpha = 255
+    def update(self):
+        self.collide()
+        self.movement()
+        self.x -= self.x_vel
+        self.y -= self.y_vel
+        self.rect.x = self.x
+        self.rect.y =self.y
+        self.x_vel *= 0.95
+        self.y_vel *= 0.95
+        if self.has_collided == True:
+            self.image.set_alpha(self.alpha)
+            self.alpha -= 25
+            if self.alpha < 10:
+                self.kill()
+        if self.on_level != self.game.level:
+            self.kill()
+    def movement(self):
+        pass
+    def collide(self):
+        if self.y > (WIN_HEIGHT - TILESIZE):
+            self.rect.y = (WIN_HEIGHT - TILESIZE)
+        elif self.y < 0:
+            self.rect.y = 0
+        if self.x > (WIN_WIDTH - TILESIZE):
+            self.rect.x = (WIN_WIDTH-TILESIZE)
+        elif self.x < 1:
+            self.rect.x = 0 
+        hits = pygame.sprite.spritecollide(self,self.game.players, False)
+        if hits:
+            for hit in hits:
+                try:
+                    if hit.mana < hit.max_mana and not self.has_collided:
+                        hit.mana = floor(hit.mana)
+                        hit.mana += 1
+                        self.has_collided = True
+                except: pass
+                
+
+############### Enemy Stuffs
+class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can change the image and also the target position!! Easy :)
+    def __init__(self,game,x,y,target_pos,image) -> None:
+        self.x = x
+        self.y = y
+        self.width = TILESIZE
+        self.height = TILESIZE
+        self.game = game
+
+        self._layer = PLAYER_LAYER+1 #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.enemies
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.target_x, self.target_y = target_pos
+        self.speed = 4
+        self.angle = atan2(y-self.target_y,x-self.target_x)
+        self.x_vel = cos(self.angle) * self.speed
+        self.y_vel = sin(self.angle) * self.speed
+        
+        self.image = image
+        
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        
+        self.current_level = self.game.level
+        self.angle = (180 / pi) * -atan2(self.target_y-self.y, self.target_x-self.x)-90
+        self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
+        self.image = self.arrow_copy
+        self.animation_frame = 0
+    def update(self):
+        self.x -= self.x_vel
+        self.y -= self.y_vel
+        self.rect.x = self.x
+        self.rect.y = self.y
+        if self.x > WIN_WIDTH or self.x < -TILESIZE:
+            self.kill()
+        if self.y > WIN_HEIGHT or self.y < -TILESIZE:
+            self.kill()
+        if self.game.level != self.current_level:
+            self.kill()
+        pygame.time.delay(0)
+
+####
 
 class Enemy(pygame.sprite.Sprite):
     pass
@@ -476,6 +643,9 @@ class Enemy(pygame.sprite.Sprite):
                 self.game.enemies_remaining -= 1
                 self.game.player.experience += 1
             self.weapon_copy.kill()
+            ManaOrb(self.game,self.x,self.y)
+            HealthOrb(self.game,self.x,self.y)
+            HealthOrb(self.game,self.x,self.y)
             self.kill()
             
     def movement(self):
@@ -515,56 +685,13 @@ class Enemy(pygame.sprite.Sprite):
         self.weapon_copy.rect.x = self.x + 32
         self.weapon_copy.rect.y = self.y
 
-class Projectile(pygame.sprite.Sprite):
-    def __init__(self,game,x,y,target_pos,image) -> None:
-        self.x = x
-        self.y = y
-        self.width = TILESIZE
-        self.height = TILESIZE
-        self.game = game
-
-        self._layer = PLAYER_LAYER+1 #Bottom BG, Enemies, Attacks, UI
-        self.groups = self.game.enemies
-        pygame.sprite.Sprite.__init__(self, self.groups)
-        self.target_x, self.target_y = target_pos
-        self.speed = 4
-        self.angle = atan2(y-self.target_y,x-self.target_x)
-        self.x_vel = cos(self.angle) * self.speed
-        self.y_vel = sin(self.angle) * self.speed
-        
-        self.image = image
-        
-        self.rect = self.image.get_rect()
-        self.rect.x = self.x
-        self.rect.y = self.y
-        
-        self.current_level = self.game.level
-        self.angle = (180 / pi) * -atan2(self.target_y-self.y, self.target_x-self.x)-90
-        self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
-        self.image = self.arrow_copy
-        self.animation_frame = 0
-    def update(self):
-        self.x -= self.x_vel
-        self.y -= self.y_vel
-        self.rect.x = self.x
-        self.rect.y = self.y
-        if self.x > WIN_WIDTH or self.x < -TILESIZE:
-            self.kill()
-        if self.y > WIN_HEIGHT or self.y < -TILESIZE:
-            self.kill()
-        if self.game.level != self.current_level:
-            self.kill()
-        pygame.time.delay(0)
-
-class Boss(pygame.sprite.Sprite):
-    pass
-
 # Area 1 Enemies
 class Thief(Enemy):
     def __init__(self, game, x=7, y=7):
         super().__init__(game, x, y, (0,0))
         self.shuriken_cooldown = 4500
         self.last_shuriken = pygame.time.get_ticks() + random.randint(0,4500)
+        self.health = 20
     def throw_shuriken(self):
         if (pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown or self.last_shuriken == 0):
 
@@ -655,6 +782,9 @@ class Guard(Enemy):
     pass
 
 #BOSSES
+
+class Boss(pygame.sprite.Sprite):
+    pass
 
 class Ninja(Boss):
     pass

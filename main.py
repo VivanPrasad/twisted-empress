@@ -14,13 +14,16 @@ class Game:
         self.font = pygame.font.Font('Assets/Font/royal-intonation.ttf',32)
         self.running = True
         
-        self.background_spritesheet = Spritesheet("Assets/map.png")
-        self.character_spritesheet = Spritesheet("Assets/Entities/player.png")
-        self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
+        self.background_spritesheet = Spritesheet("Assets/map.png") #All the several backgrounds for each of the 20 levels
+        
+        self.character_spritesheet = Spritesheet("Assets/Entities/player.png") #Sprite for player movement
+
         self.attack_spritesheet = Spritesheet("Assets/Objects/attacks.png")
         self.weapon_spritesheet = Spritesheet("Assets/Objects/weapons.png")
-        self.profile_spritesheet = Spritesheet("Assets/UI/profile.png")
-        #self.health_spritesheet = Spritesheet("Assets\UI\hp.png")
+        self.profile_spritesheet = Spritesheet("Assets/UI/profile.png") #Spritesheet all UI related things for the player! (HP, MP, XP, Spells)
+        
+        self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
+        self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(25)
@@ -37,8 +40,10 @@ class Game:
         self.playing = True
 
         self.all_sprites = pygame.sprite.LayeredUpdates()
+        self.players = pygame.sprite.LayeredUpdates() #Stores all players (for future implementation)
         self.walls = pygame.sprite.LayeredUpdates() #Stores all wall sprites
         self.enemies = pygame.sprite.LayeredUpdates() #Stores all enemy sprites
+        self.drops = pygame.sprite.LayeredUpdates() #Stores all the prize drops 
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites for the player
         self.profile = pygame.sprite.LayeredUpdates() #Stores the Player's HP, MP and XP
         self.background = Background(self,self.level-1,self.area-1) #0 plains | 1 desert | 2 forest | 3 castle
@@ -67,8 +72,10 @@ class Game:
                     
     def update(self):
         self.all_sprites.update()
+        self.players.update()
         self.enemies.update()
         self.attacks.update()
+        self.drops.update()
         self.profile.update()
         
         if self.enemies_remaining == 0:
@@ -79,8 +86,10 @@ class Game:
     def draw(self):
         self.screen.fill(BLACK)
         self.all_sprites.draw(self.screen)
+        self.players.draw(self.screen)
         self.enemies.draw(self.screen)
         self.attacks.draw(self.screen)
+        self.drops.draw(self.screen)
         self.profile.draw(self.screen)
         self.clock.tick(FPS)
         pygame.display.update()
