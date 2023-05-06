@@ -116,9 +116,9 @@ class Player(pygame.sprite.Sprite): #The Player
         self.profile = Profile(self)
         
         self.stat_tree = {
-            0:[], #Lionheart Stat Tree
-            1:[{"learn_skill":0}], #Odyssey Stat Tree
-            2:[]  #Acuity Stat Tree
+            0:[], #Lionheart Stat Tree (For pygame project part 2!)
+            1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
+            2:[]  #Acuity Stat Tree (For pygame project part 2!)
         }
         self.level = 1
         self.max_health = 4
@@ -180,10 +180,22 @@ class Player(pygame.sprite.Sprite): #The Player
         self.collide()
         self.x_change = 0
         self.y_change = 0
-        self.level_check()
+        self.level_clear_check()
+        self.exp_check()
+    
+    def exp_check(self):
+        if self.experience > self.max_experience: #checks if the experience exceeds the experience required to next level
+            self.level_up()
 
-
-    def level_check(self): #checks if the level has been cleared and that the player is on the top of the level
+    def level_up(self):
+        self.experience -= self.max_experience
+        self.level += 1
+        self.max_experience = self.level * 2 + 6
+        self.max_health += 2
+        self.health += 2
+        self.max_mana += 1
+        self.mana += 1
+    def level_clear_check(self): #checks if the level has been cleared and that the player is on the top of the level
         if self.y <= 0 and self.game.level_cleared:
             self.rect.y = WIN_HEIGHT - 32
             self.y = self.rect.y
@@ -299,10 +311,15 @@ class Player(pygame.sprite.Sprite): #The Player
             if not self.special_basic:
                 self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
             elif self.power == 0:
-                self.basic = BasicAttack(self.game, self.x-32,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+45))
-                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-45))
-                self.basic = BasicAttack(self.game, self.x-32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
-                self.special_basic = False
+                self.basic = BasicAttack(self.game, self.x-48,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+45))
+                self.basic = BasicAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-45))
+                self.basic = BasicAttack(self.game, self.x-48,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+            elif self.power == 1:
+                self.basic = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+            elif self.power == 2:
+                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]))
+                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]))
+            self.special_basic = False
     def special_attack(self):
         if (pygame.time.get_ticks() - self.last_special > self.special_cooldown or self.last_special == 0) and self.mana >= 1:
             self.last_special = pygame.time.get_ticks()
@@ -315,7 +332,7 @@ class Player(pygame.sprite.Sprite): #The Player
                 self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+50))
                 self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-50))
             elif self.power == 2:
-                self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                #self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]+50))
                 self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]-50))
 
@@ -434,8 +451,7 @@ class SpecialAttack(pygame.sprite.Sprite):
         self.alpha = 255
 
         self.has_collided = False
-        if self.game.player.power == 0:
-            self.game.player.special_basic = True
+        self.game.player.special_basic = True
     def update(self):
         self.collide()
         self.x -= self.x_vel
@@ -594,7 +610,7 @@ class ManaOrb(pygame.sprite.Sprite): #Mana Orbs that drop when killing an enemy
 
 ############### Enemy Stuffs
 class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can change the image and also the target position!! Easy :)
-    def __init__(self,game,x,y,target_pos,image) -> None:
+    def __init__(self,game,x,y,target_pos,image,speed=4) -> None:
         self.x = x
         self.y = y
         self.width = TILESIZE
@@ -605,7 +621,7 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         self.groups = self.game.enemies
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.target_x, self.target_y = target_pos
-        self.speed = 4
+        self.speed = speed
         self.angle = atan2(y-self.target_y,x-self.target_x)
         self.x_vel = cos(self.angle) * self.speed
         self.y_vel = sin(self.angle) * self.speed
@@ -637,11 +653,13 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
 ####
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, game, x=7, y=7, image_coords = (0,0)):
+    def __init__(self, game, x=7, y=7, image_coords = (0,0),has_weapon = True):
         self.game = game
         self.health = 10
         self.speed = 1.5
 
+
+        self.has_weapon = has_weapon
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.enemies
         pygame.sprite.Sprite.__init__(self, self.groups)
@@ -651,9 +669,11 @@ class Enemy(pygame.sprite.Sprite):
         self.height = TILESIZE
 
         self.image = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48,self.width,self.height)
-        self.weapon = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48+48,self.width,self.height)
-        self.weapon_angle = 90
-        self.weapon_copy = Image(self.game,self.x+20,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
+        if self.has_weapon:
+            self.weapon = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48+48,self.width,self.height)
+            self.weapon_angle = 90
+            self.weapon_copy = Image(self.game,self.x+20,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
+        
         self.original_image = self.image
         
         self.hit_image = self.image.copy()
@@ -674,7 +694,8 @@ class Enemy(pygame.sprite.Sprite):
         self.alpha = 255
     def update(self):
         self.movement()
-        self.handle_weapon()
+        if self.has_weapon:
+            self.handle_weapon()
         self.rect.x += self.x_change
         self.rect.y += self.y_change
         self.x = self.rect.x
@@ -688,14 +709,11 @@ class Enemy(pygame.sprite.Sprite):
         if self.alpha < 1 and self.alive():
             self.death_loot()
             self.game.enemies_remaining -= 1
-            self.weapon_copy.kill()
+            if self.has_weapon:
+                self.weapon_copy.kill()
             self.kill()
     def death_loot(self):
         self.game.player.experience += 1
-        ManaOrb(self.game,self.x,self.y)
-        HealthOrb(self.game,self.x,self.y)
-        HealthOrb(self.game,self.x,self.y)
-        
             
     def movement(self):
         self.chase()
@@ -826,20 +844,121 @@ class Archer(Enemy):
         HealthOrb(self.game,self.x,self.y)
 # Area 2 Enemies
 class Defender(Enemy):
-    pass
+    def __init__(self, game, x,y):
+        super().__init__(game, x, y,(2,0))
+        self.arrow_cooldown = 2000
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2000)
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.health = 20
+        self.arrow_image = self.game.enemy_spritesheet.get_sprite(96,96,24,48)
+    def throw_arrow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.last_arrow = pygame.time.get_ticks()
+            self.arrow_cooldown = random.randint(1500,2500)
+            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
+    def chase(self):
+        self.roam()
+    def roam(self):
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+        
+        if abs(dirvect.x) > 100.0 or abs(dirvect.y) > 100.0:
+            self.throw_arrow()
+            self.speed = 2
+        if pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown:
+            self.player_x, self.player_y = self.game.player.x,self.game.player.y
+            dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+            self.speed = -2
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(0,0)
+            self.speed = 0
+        # Move along this normalized vector towards the player at current speed.
+        
+        self.x_change, self.y_change = dirvect.x, dirvect.y
+    def death_loot(self):
+        self.game.player.experience += 3
+        ManaOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+
+class Warrior(Enemy):
+    def __init__(self, game, x,y):
+        super().__init__(game, x, y,(3,0))
+        self.cooldown = 2000
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2000)
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.health = 30
+        self.arrow_image = self.game.enemy_spritesheet.get_sprite(144,114,84,30)
+    def throw_arrow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.last_arrow = pygame.time.get_ticks()
+            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
+    def chase(self):
+        self.roam()
+    def roam(self):
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+        
+        if abs(dirvect.x) > 100.0 or abs(dirvect.y) > 100.0:
+            self.throw_arrow()
+            self.speed = 2
+        if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
+            self.player_x, self.player_y = self.game.player.x,self.game.player.y
+            dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+            self.speed = -2
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(0,0)
+            self.speed = 0
+        # Move along this normalized vector towards the player at current speed.
+        
+        self.x_change, self.y_change = dirvect.x, dirvect.y
+    def death_loot(self):
+        self.game.player.experience += 3
+        ManaOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
 
 class Sentry(Enemy):
-    pass
-
-class Detector(Enemy):
-    pass
+    def __init__(self, game, x,y):
+        super().__init__(game, x, y,(4,0),False) #(1,0) is the tilemap coordinate for the Archer
+        self.arrow_cooldown = 3000
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,1000)
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.health = 10
+        self.arrow_image = self.game.enemy_spritesheet.get_sprite(48*4,48,18,48)
+        self.shoot_limit = 10
+        self.shoot_count = 0
+    def shoot(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.last_arrow = pygame.time.get_ticks()
+            if self.shoot_count != self.shoot_limit:
+                self.arrow_cooldown = 100
+                self.shoot_count += 1
+            else:
+                self.arrow_cooldown = 3000
+                self.shoot_count = 0
+            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,7) #shoots three arrows towards the player in a triple shot format
+    
+    def movement(self): #no movement
+        self.shoot()
+    def death_loot(self):
+        self.game.player.experience += 3
+        ManaOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
 
 # Area 3 Enemies
 
 class Apprentice(Enemy):
-    pass
-
-class Warrior(Enemy):
     pass
 
 # Area 4 Enemies

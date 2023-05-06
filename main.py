@@ -28,11 +28,48 @@ class Game:
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(25)
 
-        self.level = 3
+        self.level = 1
         self.area = 1
         self.level_cleared = True
         self.player_power = 0
         self.enemies_remaining = 0
+
+        self.level_data = [
+            [ #AREA 1 - MIGHTY MEADOWS
+                [], #Level 1-1 (Empty)
+                [lambda:Thief(self),lambda:Archer(self,5,0)], #Level 1-2
+                [lambda:Thief(self,4,2),lambda:Thief(self,10,2),lambda:Archer(self,2,2)], #Level 1-3
+                [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,10,4)], #Level 1-4
+                [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2)]
+            ], #Boss Level 1-5
+            [ #AREA 2 - DESERT
+                [],
+                [lambda:Defender(self,7,7),lambda:Sentry(self,9,1),lambda:Warrior(self,8,1)],
+                [lambda:Sentry(self,1,1),lambda:Defender(self,7,4),lambda:Sentry(self,13,1)],
+                [lambda:Warrior(self,8,1),lambda:Sentry(self,4,2),lambda:Defender(self,3,5)],
+                [lambda:Warrior(self,8,1),lambda:Warrior(self,2,1),lambda:Defender(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Defender(self,3,5)],
+            ],
+            [ #AREA 3 - THE ENCHANTED FOREST
+                [],
+                [],
+                [],
+                [],
+                [],
+            ],
+            [ #AREA 4 - THE CASTLE
+                [],
+                [],
+                [],
+                [],
+                [],
+            ],
+            [ #AREA 5 - THE HEART
+                [],
+                [],
+                [],
+                [],
+                [],
+            ],]
 
         self.new()
     def new(self):
@@ -133,11 +170,7 @@ class Game:
         self.playing = True
             
     def next_level(self):
-        levels = [0,
-                  [lambda:Thief(self),lambda:Archer(self,5,0)],
-                  [lambda:Thief(self,4,2),lambda:Thief(self,8,2),lambda:Archer(self,2,2)],
-                  [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,5,4)]
-                  ]
+
         if self.level == 5:
             if self.area < 4:
                 self.area += 1
@@ -160,8 +193,8 @@ class Game:
         self.enemies_remaining = 0
         self.level_cleared = False
         try:
-            for enemy in levels[self.level-1]:
-                enemy()
+            for enemy in self.level_data[self.area-1][self.level-1]:
+                enemy() #tries to call the enemy
                 self.enemies_remaining += 1
         except:
             pass
