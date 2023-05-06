@@ -28,7 +28,7 @@ class Game:
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(25)
 
-        self.level = 1
+        self.level = 3
         self.area = 1
         self.level_cleared = True
         self.player_power = 0
@@ -43,7 +43,7 @@ class Game:
         self.players = pygame.sprite.LayeredUpdates() #Stores all players (for future implementation)
         self.walls = pygame.sprite.LayeredUpdates() #Stores all wall sprites
         self.enemies = pygame.sprite.LayeredUpdates() #Stores all enemy sprites
-        self.drops = pygame.sprite.LayeredUpdates() #Stores all the prize drops 
+        self.drops = pygame.sprite .LayeredUpdates() #Stores all the prize drops 
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites for the player
         self.profile = pygame.sprite.LayeredUpdates() #Stores the Player's HP, MP and XP
         self.background = Background(self,self.level-1,self.area-1) #0 plains | 1 desert | 2 forest | 3 castle
@@ -135,8 +135,8 @@ class Game:
     def next_level(self):
         levels = [0,
                   [lambda:Thief(self),lambda:Archer(self,5,0)],
-                  [lambda:Thief(self,8,2),lambda:Archer(self,2,2)],
-                  [lambda:Thief(self,3,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,5,4)]
+                  [lambda:Thief(self,4,2),lambda:Thief(self,8,2),lambda:Archer(self,2,2)],
+                  [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,5,4)]
                   ]
         if self.level == 5:
             if self.area < 4:
