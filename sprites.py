@@ -1,4 +1,5 @@
 from config import *
+from audio import *
 import pygame, random
 from math import *
 
@@ -50,6 +51,7 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
         self.original_health_bar = self.health_bar.image
         
         self.health_alert_animation = 0 #value for calculating timing for the alert flashing
+        self.health_alert_playing = False
 
 
     def update(self): #updates all the parts of the profile
@@ -63,6 +65,7 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
         if pygame.time.get_ticks() - self.player.last_hit < self.player.hit_cooldown - 100: #checking whether the player was hit or not recently
             self.image = self.player.game.profile_spritesheet.get_sprite(336*self.player.power*3 + 336,192*6,56*6,32*6)
             self.image.set_alpha(100)
+            self.health_alert_animation = 0
             
             self.flashing_health(True)
         elif float(self.player.health / self.player.max_health) <= 0.25:
@@ -71,6 +74,15 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
         else:
             self.image = self.player.game.profile_spritesheet.get_sprite(336*self.player.power*3,192*6,56*6,32*6)
             self.health_bar.image = self.original_health_bar
+            self.health_alert_animation = 0
+        
+        if self.health_alert_animation > 0 and not self.health_alert_playing:
+            SFX.low_hp_alert.set_volume(0.1)
+            SFX.low_hp_alert.play(-1)
+            self.health_alert_playing = True
+        elif self.health_alert_animation == 0:
+            SFX.low_hp_alert.stop()
+            self.health_alert_playing = False
     def flashing_health(self,once):
         if once:
             self.original_health_bar = self.health_bar.image
@@ -91,7 +103,7 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
                 del var
                 self.health_bar.image = self.hit_image
                 if self.health_alert_animation >= 2:
-                    self.health_alert_animation = 0
+                    self.health_alert_animation = 0.025
             else:
                 self.health_bar.image = self.original_health_bar
 
@@ -141,7 +153,7 @@ class Player(pygame.sprite.Sprite): #The Player
         self.weapon = self.game.weapon_spritesheet.get_sprite(self.power*48,0,self.width,self.height)
         self.x_change = 0 #x_vel
         self.y_change = 0 #y_vel
-
+        
         self.facing = "down"
 
         self.rect = self.image.get_rect()
@@ -151,12 +163,8 @@ class Player(pygame.sprite.Sprite): #The Player
         self.weapon_copy = Image(self.game,self.x+30,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
 
         self.dash_cooldown = 2000
-        if self.power == 0:
-            self.basic_cooldown = 500
-        elif self.power == 1:
-            self.basic_cooldown = 550
-        elif self.power == 2:
-            self.basic_cooldown = 600
+        self.basic_cooldowns = [600,500,800] #cooldowns for basic attacks
+        self.basic_cooldown = self.basic_cooldowns[self.power]
 
         
         self.special_cooldown = 1000
@@ -188,13 +196,15 @@ class Player(pygame.sprite.Sprite): #The Player
             self.level_up()
 
     def level_up(self):
+        SFX.level_up.play()
         self.experience -= self.max_experience
         self.level += 1
         self.max_experience = self.level * 2 + 6
         self.max_health += 2
         self.health += 2
-        self.max_mana += 1
-        self.mana += 1
+        if self.level % 2 == 0:
+            self.max_mana += 1
+            self.mana += 1
     def level_clear_check(self): #checks if the level has been cleared and that the player is on the top of the level
         if self.y <= 0 and self.game.level_cleared:
             self.rect.y = WIN_HEIGHT - 32
@@ -264,6 +274,7 @@ class Player(pygame.sprite.Sprite): #The Player
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
                 self.last_hit = pygame.time.get_ticks()
+                SFX.player_hurt.play()
                 self.health -= 1
         if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
             self.image.set_alpha(100)
@@ -304,8 +315,8 @@ class Player(pygame.sprite.Sprite): #The Player
     def basic_attack(self):
         if (pygame.time.get_ticks() - self.last_basic > self.basic_cooldown or self.last_basic == 0):
             self.last_basic = pygame.time.get_ticks()
-            if int(self.mana + 0.1) < self.max_mana:
-                self.mana += 0.1
+            if int(self.mana + 0.2) < self.max_mana:
+                self.mana += 0.2
             else:
                 self.mana = self.max_mana
             if not self.special_basic:
@@ -319,6 +330,7 @@ class Player(pygame.sprite.Sprite): #The Player
             elif self.power == 2:
                 self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]))
                 self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]))
+            self.basic_cooldown = self.basic_cooldowns[self.power]
             self.special_basic = False
     def special_attack(self):
         if (pygame.time.get_ticks() - self.last_special > self.special_cooldown or self.last_special == 0) and self.mana >= 1:
@@ -340,12 +352,14 @@ class Player(pygame.sprite.Sprite): #The Player
 
 class BasicAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
+        SFX.throw_one.play()
+
         self.x = x
         self.y = y
         self.width = TILESIZE
         self.height = TILESIZE
         self.game = game
-
+        
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.attacks
 
@@ -414,6 +428,10 @@ class BasicAttack(pygame.sprite.Sprite):
                 if not self.has_collided:
                     try:
                         hit.health -= 1
+                        if len(hits) > 1:
+                            SFX.hit2.play()
+                        else:
+                            SFX.hit1.play()
                         self.has_collided = True
                     except:
                         pass
@@ -452,6 +470,7 @@ class SpecialAttack(pygame.sprite.Sprite):
 
         self.has_collided = False
         self.game.player.special_basic = True
+        self.game.player.basic_cooldown = 100
     def update(self):
         self.collide()
         self.x -= self.x_vel
@@ -477,6 +496,7 @@ class SpecialAttack(pygame.sprite.Sprite):
                 if not self.has_collided:
                     try:
                         hit.health -= 1
+                        SFX.sword_hit.play()
                         self.has_collided = True
                     except:
                         pass
@@ -523,9 +543,10 @@ class HealthOrb(pygame.sprite.Sprite):
             self.image.set_alpha(self.alpha)
             self.alpha -= 25
             if self.alpha < 1:
+                SFX.health_orb.play()
                 self.kill()
         if self.on_level != self.game.level:
-            self.kill()
+            self.kill()  
     def movement(self):
         pass
     def collide(self):
@@ -583,6 +604,7 @@ class ManaOrb(pygame.sprite.Sprite): #Mana Orbs that drop when killing an enemy
             self.image.set_alpha(self.alpha)
             self.alpha -= 25
             if self.alpha < 10:
+                SFX.mana_orb.play()
                 self.kill()
         if self.on_level != self.game.level:
             self.kill()
@@ -711,6 +733,7 @@ class Enemy(pygame.sprite.Sprite):
             self.game.enemies_remaining -= 1
             if self.has_weapon:
                 self.weapon_copy.kill()
+            SFX.enemy_death.play()
             self.kill()
     def death_loot(self):
         self.game.player.experience += 1
@@ -766,6 +789,7 @@ class Thief(Enemy):
         if (pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown or self.last_shuriken == 0):
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_shuriken = pygame.time.get_ticks()
+            SFX.throw_two.play()
             Projectile(self.game,self.x,self.y,(self.game.player.x-45,self.game.player.y-45),self.shuriken_image)
             Projectile(self.game,self.x,self.y,(self.game.player.x+45,self.game.player.y+45),self.shuriken_image)
     def chase(self):
@@ -813,6 +837,7 @@ class Archer(Enemy):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
+            SFX.throw_circle.play()
             Projectile(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
             Projectile(self.game,self.x,self.y,(self.game.player.x-115,self.game.player.y-115),self.arrow_image)
             Projectile(self.game,self.x,self.y,(self.game.player.x+115,self.game.player.y+115),self.arrow_image)
@@ -846,16 +871,16 @@ class Archer(Enemy):
 class Defender(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(2,0))
-        self.arrow_cooldown = 2000
-        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2000)
+        self.arrow_cooldown = 3000
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,3000)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.health = 20
+        self.health = 15
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(96,96,24,48)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
-            self.arrow_cooldown = random.randint(1500,2500)
+            self.arrow_cooldown = random.randint(2800,3000)
             Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
     def chase(self):
         self.roam()
@@ -863,7 +888,7 @@ class Defender(Enemy):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         
-        if abs(dirvect.x) > 100.0 or abs(dirvect.y) > 100.0:
+        if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
             self.throw_arrow()
             self.speed = 2
         if pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown:
@@ -888,15 +913,16 @@ class Defender(Enemy):
 class Warrior(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(3,0))
-        self.cooldown = 2000
-        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2000)
+        self.cooldown = 4090
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2090)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.health = 30
+        self.health = 20
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(144,114,84,30)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 4090
             Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
     def chase(self):
         self.roam()
@@ -904,9 +930,11 @@ class Warrior(Enemy):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         
-        if abs(dirvect.x) > 100.0 or abs(dirvect.y) > 100.0:
+        if abs(dirvect.x) > 150.0 or abs(dirvect.y) > 150.0:
             self.throw_arrow()
             self.speed = 2
+        else:
+            self.cooldown = 0
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
             self.player_x, self.player_y = self.game.player.x,self.game.player.y
             dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
@@ -929,8 +957,8 @@ class Warrior(Enemy):
 class Sentry(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(4,0),False) #(1,0) is the tilemap coordinate for the Archer
-        self.arrow_cooldown = 3000
-        self.last_arrow = pygame.time.get_ticks() + random.randint(0,1000)
+        self.arrow_cooldown = 10000
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,10000)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.health = 10
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(48*4,48,18,48)
@@ -941,10 +969,10 @@ class Sentry(Enemy):
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
             if self.shoot_count != self.shoot_limit:
-                self.arrow_cooldown = 100
+                self.arrow_cooldown = 80
                 self.shoot_count += 1
             else:
-                self.arrow_cooldown = 3000
+                self.arrow_cooldown = 10000
                 self.shoot_count = 0
             Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,7) #shoots three arrows towards the player in a triple shot format
     
@@ -1042,7 +1070,7 @@ class Boss(pygame.sprite.Sprite): #Base class for all bosses (with displaying im
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
                 self.last_hit = pygame.time.get_ticks()
-        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
+        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown - 50:
             self.image = self.hit_image
         else:
             self.image = self.original_image

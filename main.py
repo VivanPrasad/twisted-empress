@@ -1,6 +1,7 @@
 import pygame
 from sprites import *
 from config import *
+from audio import *
 import sys
 
 class Game:
@@ -14,6 +15,8 @@ class Game:
         self.font = pygame.font.Font('Assets/Font/royal-intonation.ttf',32)
         self.running = True
         
+        Music.title_music.play()
+        
         self.background_spritesheet = Spritesheet("Assets/map.png") #All the several backgrounds for each of the 20 levels
         
         self.character_spritesheet = Spritesheet("Assets/Entities/player.png") #Sprite for player movement
@@ -26,7 +29,7 @@ class Game:
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         
         self.intro_background = pygame.image.load("Assets/map.png").convert()
-        self.intro_background.set_alpha(25)
+        self.intro_background.set_alpha(3)
 
         self.level = 1
         self.area = 1
@@ -37,7 +40,7 @@ class Game:
         self.level_data = [
             [ #AREA 1 - MIGHTY MEADOWS
                 [], #Level 1-1 (Empty)
-                [lambda:Thief(self),lambda:Archer(self,5,0)], #Level 1-2
+                [lambda:Thief(self),lambda:Archer(self,5,0),lambda:Archer(self,14,0)], #Level 1-2
                 [lambda:Thief(self,4,2),lambda:Thief(self,10,2),lambda:Archer(self,2,2)], #Level 1-3
                 [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,10,4)], #Level 1-4
                 [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2)]
@@ -118,6 +121,9 @@ class Game:
         if self.enemies_remaining == 0:
             self.level_cleared = True
         if self.player.health < 1:
+            SFX.low_hp_alert.stop()
+            SFX.death.play(0,0,100)
+            SFX.death.fadeout(5000)
             self.fade()
             self.playing = False
     def draw(self):
@@ -133,6 +139,7 @@ class Game:
     
     def main(self):
         #game loop
+        
         while self.playing == True:
             self.events()
             self.update()
@@ -162,25 +169,35 @@ class Game:
         fade = pygame.Surface((width, height))
         self.playing = False
         fade.fill((0,0,0))
-        for alpha in range(0, 80):
+        for alpha in range(1, 60):
             fade.set_alpha(alpha)
             self.screen.blit(fade, (0,0))
             pygame.display.update()
-            pygame.time.delay(3)
+            pygame.time.delay(10)
         self.playing = True
+        pygame.display.update()
             
     def next_level(self):
-
-        if self.level == 5:
-            if self.area < 4:
-                self.area += 1
-            else:
-                self.area = 1
         
-        if self.level < 5:
+        self.level_cleared = False
+        
+        if self.level == 5:
+            for song in Music.boss_music:
+                song.fadeout(2000)
+            Music.area_music[self.area-1].play(-1,0,5000)
+            self.area += 1
+        if self.level == 4:
+            for song in Music.area_music:
+                song.fadeout(2000)
+            Music.boss_music[self.area-1].play(-1,0,5000)
+        if self.level < 5 and self.area < 4:
             self.level += 1
         else:
             self.level = 1
+        if self.area == 5 and self.level == 2:
+            self.playing = False
+            self.running = False
+        
         self.background.kill()
         self.background = Background(self,self.level-1,self.area-1)
         if self.level == 5:
@@ -189,22 +206,23 @@ class Game:
             self.background.image.set_alpha(255)
         
         self.fade()
+        self.spawn_enemies()
 
+    def spawn_enemies(self):
         self.enemies_remaining = 0
-        self.level_cleared = False
         try:
             for enemy in self.level_data[self.area-1][self.level-1]:
                 enemy() #tries to call the enemy
                 self.enemies_remaining += 1
-        except:
-            pass
+
+        except: pass
         
     def intro_screen(self):
-        title = self.title_font.render('Twisted Empress', True, BLACK)
+        title = self.title_font.render('Twisted Empress', True, WHITE, BLACK)
         title_rect = title.get_rect(x=WIN_WIDTH/2-160,y=WIN_HEIGHT/2-170)
         play_button = Button(WIN_WIDTH/2-50,WIN_HEIGHT/2-50,100,50,WHITE,BLACK,'Play',32)
 
-        version = self.font.render('v0.0.1', True, BLACK)
+        version = self.font.render('v0.0.1', True, WHITE,BLACK)
         version_rect = version.get_rect(x=WIN_WIDTH-90,y=WIN_HEIGHT-50)
 
         main_menu = True
@@ -218,6 +236,7 @@ class Game:
             mouse_pressed = pygame.mouse.get_pressed()
             
             if play_button.is_pressed(mouse_pos, mouse_pressed):
+                SFX.ui_confirm.play()
                 main_menu = False
             if play_button.is_hovered(mouse_pos, mouse_pressed):
                 play_button.image.set_alpha(255)
@@ -246,8 +265,10 @@ class Game:
         button2 = Button(274,128*3.7,190,50,(253, 254, 137),(50,49,59),'Power of Odyssey',20)
         button3 = Button(494,128*3.7,190,50,(255, 93, 204),(50,49,59),'Power of Acuity',20)
         buttons = [button1,button2,button3]
-    
+        select_sound_played = False
+
         power_select = True
+
         while power_select == True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -272,16 +293,26 @@ class Game:
             for button in buttons:
                 if button.is_pressed(mouse_pos, mouse_pressed):
                     power_select = False
+                    SFX.game_begin.play()
+                    Music.title_music.fadeout(1000)
+                    Music.area_music[self.area-1].play(-1,0,5000)
                     self.player_power = buttons.index(button) #gives the chosen power via button index (which aligns with the power enumeration)
                 if button.is_hovered(mouse_pos, mouse_pressed):
+                    if button.image.get_alpha() != 255:
+                        select_sound_played = True
+                        SFX.ui_select.play(0,100)
                     button.image.set_alpha(255)
                     character[buttons.index(button)].set_alpha(255)
+                        
                 else:
+                    if button.image.get_alpha() == 255 and select_sound_played:
+                        select_sound_played = False
                     button.image.set_alpha(int(255/1.5))
                     character[buttons.index(button)].set_alpha(int(255/2))
             self.clock.tick(FPS)
             pygame.display.update()
         if self.running:
             self.fade()
+
 
 g = Game()

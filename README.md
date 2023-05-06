@@ -78,7 +78,12 @@ The wizard will warp reality, shifting to different dimensions upon being hit. W
 The prince will hone onto your biggest weaknesses, trigonometry! WIP!
 ### The Empress (WIP)
 The Empress will be a fast paced amalgamation of all that was taught. WIP!
-## Notes
 
 # Updates
 *This is an ongoing project for May. All the sprites and assets used (even the font!) were made by me. I even have licensed the project and font assets.
+
+# Credits
+Music and SFX - Sampled from the game "Kingdom Hearts" (Composed by Yoko Shimomura)
+Art and Assets by Vivan Prasad
+Font "Royal Intonation" by Vivan Prasad
+Player Code inspired by ShawCode's RPG Tutorial
