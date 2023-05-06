@@ -39,7 +39,7 @@ class SFX:
     enemy_death = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/enemy_death.wav')
     low_hp_alert = pygame.mixer.Sound('Assets/Audio/SFX/Player/low_hp_alert.wav')
 
-    level_up = pygame.mixer.Sound('Assets/Audio/SFX/Player/level_up.wav')
+    level_up = pygame.mixer.Sound('Assets/Audio/SFX/Player/level_up.wav'); level_up.set_volume(1.5)
 
     game_begin = pygame.mixer.Sound('Assets/Audio/SFX/Ambience/game_begin.wav')
     wind = pygame.mixer.Sound('Assets/Audio/SFX/Ambience/wind.wav')

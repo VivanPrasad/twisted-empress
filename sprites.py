@@ -77,8 +77,8 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
             self.health_alert_animation = 0
         
         if self.health_alert_animation > 0 and not self.health_alert_playing:
-            SFX.low_hp_alert.set_volume(0.1)
-            SFX.low_hp_alert.play(-1)
+            SFX.low_hp_alert.set_volume(0.8)
+            SFX.low_hp_alert.play()
             self.health_alert_playing = True
         elif self.health_alert_animation == 0:
             SFX.low_hp_alert.stop()
@@ -972,7 +972,7 @@ class Sentry(Enemy):
                 self.arrow_cooldown = 80
                 self.shoot_count += 1
             else:
-                self.arrow_cooldown = 10000
+                self.arrow_cooldown = random.randint(7000,10000)
                 self.shoot_count = 0
             Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,7) #shoots three arrows towards the player in a triple shot format
     

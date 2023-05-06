@@ -43,14 +43,14 @@ class Game:
                 [lambda:Thief(self),lambda:Archer(self,5,0),lambda:Archer(self,14,0)], #Level 1-2
                 [lambda:Thief(self,4,2),lambda:Thief(self,10,2),lambda:Archer(self,2,2)], #Level 1-3
                 [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,10,4)], #Level 1-4
-                [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2)]
+                [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2),lambda: Thief(self,13,13)]
             ], #Boss Level 1-5
             [ #AREA 2 - DESERT
                 [],
-                [lambda:Defender(self,7,7),lambda:Sentry(self,9,1),lambda:Warrior(self,8,1)],
-                [lambda:Sentry(self,1,1),lambda:Defender(self,7,4),lambda:Sentry(self,13,1)],
-                [lambda:Warrior(self,8,1),lambda:Sentry(self,4,2),lambda:Defender(self,3,5)],
-                [lambda:Warrior(self,8,1),lambda:Warrior(self,2,1),lambda:Defender(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Defender(self,3,5)],
+                [lambda:Defender(self,7,7),lambda:Sentry(self,9,1),lambda:Defender(self,3,7)],
+                [lambda:Sentry(self,1,1),lambda:Defender(self,7,4),lambda:Sentry(self,13,1),lambda:Sentry(self,13,13),lambda:Sentry(self,1,13)],
+                [lambda:Warrior(self,8,1),lambda:Sentry(self,4,2),lambda:Defender(self,3,5),lambda:Warrior(self,10,10)],
+                [lambda:Warrior(self,8,1),lambda:Warrior(self,2,1),lambda:Defender(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Sentry(self,13,13),lambda:Warrior(self,5,10),lambda:Defender(self,3,5)],
             ],
             [ #AREA 3 - THE ENCHANTED FOREST
                 [],
@@ -147,6 +147,10 @@ class Game:
         self.running = False
     
     def game_over(self):
+        for song in Music.boss_music:
+                song.fadeout(100)
+        for song in Music.area_music:
+                song.fadeout(100)
         game_over = True
         text = self.font.render('GAME OVER', True, WHITE)
         text2 = self.font.render('Press R to Retry', True, WHITE)
@@ -184,13 +188,13 @@ class Game:
         if self.level == 5:
             for song in Music.boss_music:
                 song.fadeout(2000)
-            Music.area_music[self.area-1].play(-1,0,5000)
             self.area += 1
+            Music.area_music[self.area-1].play(-1,0,5000)
         if self.level == 4:
             for song in Music.area_music:
                 song.fadeout(2000)
             Music.boss_music[self.area-1].play(-1,0,5000)
-        if self.level < 5 and self.area < 4:
+        if self.level < 5 and self.area <= 4:
             self.level += 1
         else:
             self.level = 1
