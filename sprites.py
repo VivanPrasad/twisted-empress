@@ -197,7 +197,7 @@ class Player(pygame.sprite.Sprite): #The Player
         self.dashing = 1
         self.last_special = 0
 
-        self.hit_cooldown = 750
+        self.hit_cooldown = 600
         self.last_hit = 0
         self.times_hit = 0
 
@@ -340,47 +340,43 @@ class Player(pygame.sprite.Sprite): #The Player
     def basic_attack(self):
         if (pygame.time.get_ticks() - self.last_basic > self.basic_cooldown or self.last_basic == 0):
             self.last_basic = pygame.time.get_ticks()
-            if int(self.mana + 0.2) < self.max_mana:
-                self.mana += 0.2
+            if int(self.mana + 0.1) < self.max_mana:
+                self.mana += 0.1
             else:
                 self.mana = self.max_mana
-            if not self.special_basic:
+            if self.special_basic:
+                [lambda: SFX.throw_circle.play(),lambda: SFX.throw_circle.play(),lambda: SFX.orb_throw.play()][self.game.player.power]()
+                self.basic = BasicAttack(self.game, self.x+16,self.y-16, (self.game.mouse_pos[0]-96,self.game.mouse_pos[1]-96),True)
                 self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
-            elif self.power == 0:
-                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-10,self.game.mouse_pos[1]-10))
-                #self.basic = BasicAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-45))
-                self.basic = BasicAttack(self.game, self.x-32,self.y, (self.game.mouse_pos[0]+10,self.game.mouse_pos[1]+10))
-            elif self.power == 1:
-                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
-            elif self.power == 2:
-                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]))
-            self.basic_cooldown = self.basic_cooldowns[self.power]
+                self.basic = BasicAttack(self.game, self.x+48,self.y+16, (self.game.mouse_pos[0]+96,self.game.mouse_pos[1]+96))
+            else:
+                [lambda: SFX.throw_one.play(),lambda: SFX.throw_one.play(),lambda: SFX.orb_throw.play()][self.game.player.power]()
+                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]),True)
+            self.basic_cooldown = self.basic_cooldowns[self.power] + random.randint(-50,50)
             self.special_basic = False
     def special_attack(self):
         if (pygame.time.get_ticks() - self.last_special > self.special_cooldown or self.last_special == 0) and self.mana >= 1:
             self.last_special = pygame.time.get_ticks()
             self.mana -= 1
             if self.power == 0:
-                SFX.throw_two.play()
-                self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
-                self.special = SpecialAttack(self.game, self.x,self.y-10, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                #SFX.throw_one.play()
+                self.special = SpecialAttack(self.game, self.x+32,self.y-8, (self.game.mouse_pos[0]+10,self.game.mouse_pos[1]+10))
+                #self.special = SpecialAttack(self.game, self.x+16,self.y+8, (self.game.mouse_pos[0]-10,self.game.mouse_pos[1]-10))
             elif self.power == 1:
-                SFX.throw_circle.play()
-                self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                #self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                SFX.throw_two.play()
                 self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+50))
                 self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-50))
             elif self.power == 2:
                 #self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 SFX.orb_special.play()
-                SFX.throw_two.play()
                 self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]+50))
                 self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]-50))
 
 ############################# PLAYER ATTACKS
 
 class BasicAttack(pygame.sprite.Sprite):
-    def __init__(self,game,x,y,mouse_pos) -> None:
-
+    def __init__(self,game,x,y,mouse_pos,makes_sound = False) -> None:
         self.x = x
         self.y = y
         self.width = TILESIZE
@@ -407,10 +403,9 @@ class BasicAttack(pygame.sprite.Sprite):
         elif self.game.player.power == 2:
             self.image = self.game.attack_spritesheet.get_sprite(48,0,24,24)
             self.speed = 6
-        [lambda: SFX.throw_one.play(),lambda: SFX.throw_one.play(),lambda: SFX.orb_throw.play()][self.game.player.power]()
         self.hit_sfx = [SFX.sword_hit,SFX.arrow_hit,SFX.orb_hit][self.game.player.power]
         self.two_hit_sfx = [SFX.sword_hit2,SFX.arrow_hit,SFX.orb_hit][self.game.player.power]
-        self.three_hit_sfx = [SFX.sword_hit3,SFX.arrow_special_hit,SFX.orb_throw][self.game.player.power]
+        self.three_hit_sfx = [SFX.sword_hit3,SFX.sword_hit3,SFX.orb_throw][self.game.player.power]
 
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = self.x, self.y
@@ -419,9 +414,13 @@ class BasicAttack(pygame.sprite.Sprite):
         self.angle = (180 / pi) * -atan2(self.mouse_y-self.y, self.mouse_x-self.x)-90
         self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
         self.image = self.arrow_copy
+        
         self.alpha = 255
+        self.makes_sound = makes_sound #since there are several instances, there must only be one sound playing at once (to not make it sound really loud)
+
         self.animation_frame = 0
         self.has_collided = False
+        self.is_special = self.game.player.special_basic #if the basic attack is special
     def update(self):
         self.collide()
         if self.game.player.power == 0:
@@ -461,17 +460,22 @@ class BasicAttack(pygame.sprite.Sprite):
             for hit in hits:
                 if not self.has_collided:
                     try:
-                        hit.health -= 1
-                        if self.game.player.special_basic:
-                            SFX.sword_hit3.play()
-                        if len(hits) ==2:
-                            SFX.sword_hit2.play()
-                        elif len(hits) == 3:
-                            SFX.sword_hit3.play()
+                        if self.is_special:
+                            hit.health -= 1
                         else:
-                            self.hit_sfx.play()
+                            hit.health -= 1
                     except:
                         pass
+            if not self.has_collided and self.makes_sound:
+                if self.game.player.power == 0:
+                    if len(hits) == 1:
+                        SFX.sword_hit.play()
+                    if len(hits) ==2:
+                        SFX.sword_hit2.play()
+                    elif len(hits) == 3:
+                        SFX.sword_hit3.play()
+                else:
+                    self.hit_sfx.play()
             self.has_collided = True
                     
 ###
@@ -487,15 +491,12 @@ class SpecialAttack(pygame.sprite.Sprite):
         self.groups = self.game.attacks
         pygame.sprite.Sprite.__init__(self, self.groups)
         mouse_x, mouse_y = mouse_pos
-        self.speed = 10
+        self.speed = 8
         self.angle = atan2(y-mouse_y,x-mouse_x)
         self.x_vel = cos(self.angle) * self.speed
         self.y_vel = sin(self.angle) * self.speed
         
         self.image = [self.game.attack_spritesheet.get_sprite(self.width*2,96+24,self.width*2,24), self.game.attack_spritesheet.get_sprite(0,48,18,48), self.game.attack_spritesheet.get_sprite(48,48,36,36)][self.game.player.power]
-        self.attack_sfx = [lambda: SFX.sword_special_hit.play(),lambda: SFX.arrow_special_hit.play(),lambda: SFX.orb_hit.play()]
-        
-
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
@@ -519,8 +520,8 @@ class SpecialAttack(pygame.sprite.Sprite):
         if self.y > WIN_HEIGHT:
             self.kill()
         if self.game.player.power == 0:
-            self.x_vel *= 0.97
-            self.y_vel *= 0.97
+            self.x_vel *= 0.98
+            self.y_vel *= 0.98
             self.alpha -= 3
             self.image.set_alpha(self.alpha)
             if self.alpha < 1:
@@ -533,7 +534,8 @@ class SpecialAttack(pygame.sprite.Sprite):
                 if not self.has_collided:
                     try:
                         hit.health -= 1
-                        self.attack_sfx[self.game.player.power]()
+                        if self.game.player.power == 0:
+                            SFX.sword_special_hit.play()
                         self.has_collided = True
                     except:
                         pass
@@ -711,7 +713,9 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
     def custom_update(self): #for custom objects to have certain perameters and functions that update
         pass
 ####
-
+class EnemyHealthBar(pygame.sprite.Sprite):
+    pass
+##############
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, game, x=7, y=7, image_coords = (0,0),has_weapon = True):
         self.game = game
@@ -793,6 +797,10 @@ class Enemy(pygame.sprite.Sprite):
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
                 self.last_hit = pygame.time.get_ticks()
+                try:
+                    if self.game.player.mana + 0.05 < self.game.player.max_mana:
+                        self.game.player.mana += 0.05
+                except: pass
         if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
             self.image = self.hit_image
         else:
