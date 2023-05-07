@@ -26,6 +26,29 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
+        self.color = [0,0,0]
+        self.color_direction = [1,1,1]
+        if self.game.area == 5 and self.game.level == 5:
+            self.image = pygame.Surface((WIN_WIDTH,WIN_HEIGHT))
+    def update(self):
+        if self.game.area == 5 and self.game.level == 5:
+            self.color_change()
+            self.image.fill(tuple(self.color),self.image.get_rect())
+            pygame.display.update()
+    def color_change(self):
+        for x in range(3):
+            self.color[x] += self.color_direction[x]
+            if self.color[x] >= 255 or self.color[x] <= 0:
+                self.color_direction[x] *= -1
+                self.color_direction = [random.randint(-1,1),random.randint(-1,1),random.randint(-1,1)]
+            if self.color[x] > 255:
+                self.color[x] = 255
+                self.color_direction = [random.randint(-1,1),random.randint(-1,1),random.randint(-1,1)]
+            if self.color[x] < 0:
+                self.color[x] = 0
+                self.color_direction = [random.randint(-1,1),random.randint(-1,1),random.randint(-1,1)]
+            
+
 ##########################################
 
 class Profile(pygame.sprite.Sprite): #Profile Handler for Player
@@ -176,7 +199,7 @@ class Player(pygame.sprite.Sprite): #The Player
 
         self.hit_cooldown = 750
         self.last_hit = 0
-
+        self.times_hit = 0
 
     def update(self):
         self.animate()
@@ -233,7 +256,7 @@ class Player(pygame.sprite.Sprite): #The Player
         self.x_change *= self.dashing
         self.y_change *= self.dashing
 
-        if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 8:
+        if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 8.5:
             self.dashing = 1
 
         if keys[pygame.K_SPACE]:
@@ -272,11 +295,12 @@ class Player(pygame.sprite.Sprite): #The Player
         
         hits = pygame.sprite.spritecollide(self,self.game.enemies, False)
         if hits:
-            if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
+            if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown and pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 3:
                 self.last_hit = pygame.time.get_ticks()
                 SFX.player_hurt.play()
                 self.health -= 1
-        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
+                self.times_hit += 1
+        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown or pygame.time.get_ticks() - self.last_dashed < self.dash_cooldown / 3:
             self.image.set_alpha(100)
         else:
             self.image.set_alpha(255)
@@ -311,6 +335,7 @@ class Player(pygame.sprite.Sprite): #The Player
         if (pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown or self.last_dashed == 0) and self.mana >= 1 and (self.x_change != 0 or self.y_change != 0):
             self.dashing = 4
             self.mana -= 1
+            SFX.dash.play()
             self.last_dashed = pygame.time.get_ticks()
     def basic_attack(self):
         if (pygame.time.get_ticks() - self.last_basic > self.basic_cooldown or self.last_basic == 0):
@@ -322,13 +347,12 @@ class Player(pygame.sprite.Sprite): #The Player
             if not self.special_basic:
                 self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
             elif self.power == 0:
-                self.basic = BasicAttack(self.game, self.x-48,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+45))
-                self.basic = BasicAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-45))
-                self.basic = BasicAttack(self.game, self.x-48,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-10,self.game.mouse_pos[1]-10))
+                #self.basic = BasicAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-45))
+                self.basic = BasicAttack(self.game, self.x-32,self.y, (self.game.mouse_pos[0]+10,self.game.mouse_pos[1]+10))
             elif self.power == 1:
-                self.basic = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
             elif self.power == 2:
-                self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]))
                 self.basic = BasicAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]))
             self.basic_cooldown = self.basic_cooldowns[self.power]
             self.special_basic = False
@@ -337,14 +361,18 @@ class Player(pygame.sprite.Sprite): #The Player
             self.last_special = pygame.time.get_ticks()
             self.mana -= 1
             if self.power == 0:
+                SFX.throw_two.play()
                 self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 self.special = SpecialAttack(self.game, self.x,self.y-10, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
             elif self.power == 1:
+                SFX.throw_circle.play()
                 self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+50))
                 self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-50))
             elif self.power == 2:
                 #self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                SFX.orb_special.play()
+                SFX.throw_two.play()
                 self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]+50))
                 self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]-50))
 
@@ -352,7 +380,6 @@ class Player(pygame.sprite.Sprite): #The Player
 
 class BasicAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
-        SFX.throw_one.play()
 
         self.x = x
         self.y = y
@@ -376,8 +403,15 @@ class BasicAttack(pygame.sprite.Sprite):
             self.image = self.game.attack_spritesheet.get_sprite(0,96*9,self.width*2,self.height)
         elif self.game.player.power == 1:
             self.image = self.game.attack_spritesheet.get_sprite(0,0,18,48)
+            self.speed = 9
         elif self.game.player.power == 2:
             self.image = self.game.attack_spritesheet.get_sprite(48,0,24,24)
+            self.speed = 6
+        [lambda: SFX.throw_one.play(),lambda: SFX.throw_one.play(),lambda: SFX.orb_throw.play()][self.game.player.power]()
+        self.hit_sfx = [SFX.sword_hit,SFX.arrow_hit,SFX.orb_hit][self.game.player.power]
+        self.two_hit_sfx = [SFX.sword_hit2,SFX.arrow_hit,SFX.orb_hit][self.game.player.power]
+        self.three_hit_sfx = [SFX.sword_hit3,SFX.arrow_special_hit,SFX.orb_throw][self.game.player.power]
+
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = self.x, self.y
         
@@ -428,13 +462,18 @@ class BasicAttack(pygame.sprite.Sprite):
                 if not self.has_collided:
                     try:
                         hit.health -= 1
-                        if len(hits) > 1:
-                            SFX.hit2.play()
+                        if self.game.player.special_basic:
+                            SFX.sword_hit3.play()
+                        if len(hits) ==2:
+                            SFX.sword_hit2.play()
+                        elif len(hits) == 3:
+                            SFX.sword_hit3.play()
                         else:
-                            SFX.hit1.play()
-                        self.has_collided = True
+                            self.hit_sfx.play()
                     except:
                         pass
+            self.has_collided = True
+                    
 ###
 
 class SpecialAttack(pygame.sprite.Sprite):
@@ -453,12 +492,10 @@ class SpecialAttack(pygame.sprite.Sprite):
         self.x_vel = cos(self.angle) * self.speed
         self.y_vel = sin(self.angle) * self.speed
         
-        if self.game.player.power == 0:
-            self.image = self.game.attack_spritesheet.get_sprite(self.width*2,96+24,self.width*2,24)
-        elif self.game.player.power == 1:
-            self.image = self.game.attack_spritesheet.get_sprite(0,48,18,48)
-        elif self.game.player.power == 2:
-            self.image = self.game.attack_spritesheet.get_sprite(48,48,36,36)
+        self.image = [self.game.attack_spritesheet.get_sprite(self.width*2,96+24,self.width*2,24), self.game.attack_spritesheet.get_sprite(0,48,18,48), self.game.attack_spritesheet.get_sprite(48,48,36,36)][self.game.player.power]
+        self.attack_sfx = [lambda: SFX.sword_special_hit.play(),lambda: SFX.arrow_special_hit.play(),lambda: SFX.orb_hit.play()]
+        
+
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
@@ -496,7 +533,7 @@ class SpecialAttack(pygame.sprite.Sprite):
                 if not self.has_collided:
                     try:
                         hit.health -= 1
-                        SFX.sword_hit.play()
+                        self.attack_sfx[self.game.player.power]()
                         self.has_collided = True
                     except:
                         pass
@@ -638,7 +675,6 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         self.width = TILESIZE
         self.height = TILESIZE
         self.game = game
-
         self._layer = PLAYER_LAYER+1 #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.enemies
         pygame.sprite.Sprite.__init__(self, self.groups)
@@ -662,6 +698,7 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
     def update(self):
         self.x -= self.x_vel
         self.y -= self.y_vel
+        self.custom_update()
         self.rect.x = self.x
         self.rect.y = self.y
         if self.x > WIN_WIDTH or self.x < -TILESIZE:
@@ -671,7 +708,8 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         if self.game.level != self.current_level:
             self.kill()
         pygame.time.delay(0)
-
+    def custom_update(self): #for custom objects to have certain perameters and functions that update
+        pass
 ####
 
 class Enemy(pygame.sprite.Sprite):
@@ -868,11 +906,29 @@ class Archer(Enemy):
         ManaOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
 # Area 2 Enemies
+
+class Rock(Projectile):
+    def __init__(self, game, x, y, target_pos, image, speed=2) -> None:
+        super().__init__(game, x, y, target_pos, image, speed)
+        self.wait = random.randint(500,3000)
+        self.spawn_time = pygame.time.get_ticks()
+    def custom_update(self):
+        if self.spawn_time == 0:
+            return
+        if pygame.time.get_ticks() - self.spawn_time > self.wait:
+            self.spawn_time = 0
+            self.target_x,self.target_y = self.game.player.x,self.game.player.y
+            dirvect = pygame.math.Vector2(self.target_x - self.x, self.target_y - self.y).normalize()
+            dirvect.scale_to_length(self.speed*-3)
+            self.x_vel, self.y_vel = dirvect.x, dirvect.y
+        else:
+            self.x_vel = cos(pygame.time.get_ticks()) *2
+            self.y_vel = sin(pygame.time.get_ticks()) *2
 class Defender(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(2,0))
-        self.arrow_cooldown = 3000
-        self.last_arrow = pygame.time.get_ticks() + random.randint(0,3000)
+        self.arrow_cooldown = 5000
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,1000)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.health = 15
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(96,96,24,48)
@@ -880,8 +936,9 @@ class Defender(Enemy):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
-            self.arrow_cooldown = random.randint(2800,3000)
-            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
+            self.arrow_cooldown = random.randint(800,5000)
+            Rock(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image)
+            Rock(self.game,self.x-32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots two arrows towards the player in a triple shot format
     def chase(self):
         self.roam()
     def roam(self):
@@ -906,15 +963,29 @@ class Defender(Enemy):
         self.x_change, self.y_change = dirvect.x, dirvect.y
     def death_loot(self):
         self.game.player.experience += 3
-        ManaOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
 
+class WarriorStrike(Projectile):
+    def __init__(self, game, x, y, target_pos, image, speed=4, decay=0) -> None:
+        super().__init__(game, x, y, target_pos, image, speed)
+        self.alpha = 255
+        self.x_vel /= 2
+        self.y_vel /= 2
+    def custom_update(self):
+        self.image.set_alpha(self.alpha)
+        self.alpha -= 1
+        self.x_vel *= 1.01
+        self.y_vel *= 1.01
+        if self.alpha <= 0:
+            self.kill()
 class Warrior(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(3,0))
         self.cooldown = 4090
-        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2090)
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,4090)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.health = 20
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(144,114,84,30)
@@ -923,22 +994,19 @@ class Warrior(Enemy):
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = 4090
-            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
+            WarriorStrike(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,5) #shoots three arrows towards the player in a triple shot format
     def chase(self):
         self.roam()
     def roam(self):
         # Find direction vector (dx, dy) between enemy and player.
+        self.player_x,self.player_y = self.game.player.x,self.game.player.y
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         
-        if abs(dirvect.x) > 150.0 or abs(dirvect.y) > 150.0:
+        if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
             self.throw_arrow()
-            self.speed = 2
-        else:
-            self.cooldown = 0
+            self.speed = 1
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
-            self.player_x, self.player_y = self.game.player.x,self.game.player.y
-            dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
-            self.speed = -2
+            self.speed = -3
         if dirvect.x != 0 and dirvect.y != 0:
             dirvect.normalize()
             dirvect.scale_to_length(self.speed)
@@ -953,12 +1021,13 @@ class Warrior(Enemy):
         ManaOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
 
 class Sentry(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(4,0),False) #(1,0) is the tilemap coordinate for the Archer
         self.arrow_cooldown = 10000
-        self.last_arrow = pygame.time.get_ticks() + random.randint(0,10000)
+        self.last_arrow = pygame.time.get_ticks() + 2500
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.health = 10
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(48*4,48,18,48)
@@ -969,17 +1038,20 @@ class Sentry(Enemy):
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
             if self.shoot_count != self.shoot_limit:
-                self.arrow_cooldown = 80
+                self.arrow_cooldown = 300
                 self.shoot_count += 1
             else:
                 self.arrow_cooldown = random.randint(7000,10000)
                 self.shoot_count = 0
-            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,7) #shoots three arrows towards the player in a triple shot format
+            SFX.laser.play()
+            SFX.laser.fadeout(300)
+            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,9) #shoots three arrows towards the player in a triple shot format
     
     def movement(self): #no movement
         self.shoot()
     def death_loot(self):
         self.game.player.experience += 3
+        ManaOrb(self.game,self.x,self.y)
         ManaOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)

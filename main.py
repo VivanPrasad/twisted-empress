@@ -43,28 +43,28 @@ class Game:
                 [lambda:Thief(self),lambda:Archer(self,5,0),lambda:Archer(self,14,0)], #Level 1-2
                 [lambda:Thief(self,4,2),lambda:Thief(self,10,2),lambda:Archer(self,2,2)], #Level 1-3
                 [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,10,4)], #Level 1-4
-                [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2),lambda: Thief(self,13,13)]
+                [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2),lambda: Thief(self,13,2)]
             ], #Boss Level 1-5
             [ #AREA 2 - DESERT
                 [],
                 [lambda:Defender(self,7,7),lambda:Sentry(self,9,1),lambda:Defender(self,3,7)],
-                [lambda:Sentry(self,1,1),lambda:Defender(self,7,4),lambda:Sentry(self,13,1),lambda:Sentry(self,13,13),lambda:Sentry(self,1,13)],
+                [lambda:Sentry(self,4,4),lambda:Defender(self,5,5),lambda:Sentry(self,10,4),lambda:Sentry(self,10,10),lambda:Sentry(self,4,10)],
                 [lambda:Warrior(self,8,1),lambda:Sentry(self,4,2),lambda:Defender(self,3,5),lambda:Warrior(self,10,10)],
-                [lambda:Warrior(self,8,1),lambda:Warrior(self,2,1),lambda:Defender(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Sentry(self,13,13),lambda:Warrior(self,5,10),lambda:Defender(self,3,5)],
+                [lambda:Warrior(self,8,1),lambda:Warrior(self,2,1),lambda:Defender(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Sentry(self,13,1),lambda:Warrior(self,5,10),lambda:Defender(self,3,5)],
             ],
             [ #AREA 3 - THE ENCHANTED FOREST
                 [],
-                [],
-                [],
-                [],
-                [],
+                [lambda:Warrior(self,10,8),lambda:Warrior(self,1,8)],
+                [lambda:Warrior(self,8,8),lambda:Warrior(self,1,7),lambda:Archer(self,13,1),lambda:Warrior(self,13,1),lambda:Warrior(self,1,13)],
+                [lambda:Warrior(self,8,8),lambda:Warrior(self,3,8),lambda:Archer(self,5,1),lambda:Archer(self,13,1),lambda:Archer(self,8,1)],
+                [lambda:Warrior(self,8,8),lambda:Thief(self),lambda:Archer(self,3,13)],
             ],
             [ #AREA 4 - THE CASTLE
                 [],
                 [],
-                [],
-                [],
-                [],
+                [lambda:Thief(self),lambda:Thief(self,4,2)],
+                [lambda:Warrior(self,2,3)],
+                [lambda:Warrior(self,8,8)],
             ],
             [ #AREA 5 - THE HEART
                 [],
@@ -139,13 +139,68 @@ class Game:
     
     def main(self):
         #game loop
-        
+        self.start_time = pygame.time.get_ticks()
         while self.playing == True:
             self.events()
             self.update()
             self.draw()
         self.running = False
     
+    def game_complete(self):
+        SFX.wind.play()
+        for song in Music.boss_music:
+                song.fadeout(100)
+        for song in Music.area_music:
+                song.fadeout(100)
+        SFX.wind.fadeout(3500)
+        self.playing = False
+        game_complete = True
+        seconds = floor((pygame.time.get_ticks()-self.start_time) / 1000) #calculate the amount of total seconds from the time of the game actually starting
+        minutes = 0
+        hours = 0
+        while seconds >= 60:
+            minutes += 1
+            seconds -= 60
+        while minutes >= 60:
+            hours += 1
+            minutes -= 60
+        power1 = self.font.render('With the Power of', True, WHITE)
+        power2 = self.font.render(f'{["Lionheart","Odyssey","Acuity"][self.player_power]}', True, [BLUE,YELLOW,PINK][self.player_power])
+        text1 = self.font.render('You defeated the Twisted Empress.', True, WHITE)
+        text2 = self.font.render('But at what cost?', True, (120,120,120))
+        text3 = self.font.render('The world has been restored.', True, WHITE)
+        text4 = self.font.render('...or is it?', True, RED)
+
+        time_text = self.font.render(f'Completion Time: {f"0{hours}" if hours < 10 else f"{hours}"}:{f"0{minutes}" if minutes < 10 else f"{minutes}"}:{f"0{seconds}" if seconds < 10 else f"{seconds}"}', True, (141,216,148))
+        mode = self.font.render('Normal Mode',True, (48,48,48))
+        replay_text = self.font.render('Press R to Replay', True, [PINK,BLUE,YELLOW][self.player_power])
+        times_hit_text = self.font.render(f'Times Hit: {self.player.times_hit}', True, RED if self.player.times_hit != 0 else (74,185,163))
+        while game_complete == True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game_complete = False
+                    self.running = False
+                    SFX.wind.fadeout(100)
+                if pygame.key.get_pressed()[pygame.K_r]:
+                    game_complete = False
+                    global g
+                    g = Game()
+            print(floor(pygame.time.get_ticks() / 1000))
+                    
+            self.screen.fill(BLACK)
+
+            self.screen.blit(power1,(48,48))
+            self.screen.blit(power2,(144*2+18,48))
+            self.screen.blit(text1,(48,96))
+            self.screen.blit(text2,(48,144))
+            self.screen.blit(text3,(48,188))
+            self.screen.blit(text4,(48,232))
+            self.screen.blit(time_text,(48,188*2))
+            self.screen.blit(mode,(48,188*2+72))
+            self.screen.blit(times_hit_text,(48,188*2+144))
+            self.screen.blit(replay_text,(44*6,WIN_HEIGHT/1.1))
+            
+            pygame.display.update()
     def game_over(self):
         for song in Music.boss_music:
                 song.fadeout(100)
@@ -185,22 +240,28 @@ class Game:
         
         self.level_cleared = False
         
+        if self.area == 5 and self.level == 5:
+            self.fade()
+            self.background.kill()
+            self.game_complete()
+            self.playing = False
+            return
+
         if self.level == 5:
             for song in Music.boss_music:
                 song.fadeout(2000)
             self.area += 1
             Music.area_music[self.area-1].play(-1,0,5000)
+        
         if self.level == 4:
             for song in Music.area_music:
                 song.fadeout(2000)
             Music.boss_music[self.area-1].play(-1,0,5000)
-        if self.level < 5 and self.area <= 4:
+        
+        if self.level < 5:
             self.level += 1
         else:
             self.level = 1
-        if self.area == 5 and self.level == 2:
-            self.playing = False
-            self.running = False
         
         self.background.kill()
         self.background = Background(self,self.level-1,self.area-1)
@@ -208,7 +269,6 @@ class Game:
             self.background.image.set_alpha(180)
         else:
             self.background.image.set_alpha(255)
-        
         self.fade()
         self.spawn_enemies()
 
@@ -299,7 +359,10 @@ class Game:
                     power_select = False
                     SFX.game_begin.play()
                     Music.title_music.fadeout(1000)
-                    Music.area_music[self.area-1].play(-1,0,5000)
+                    if self.level != 5:
+                        Music.area_music[self.area-1].play(-1,0,5000)
+                    else:
+                        Music.boss_music[self.area-1].play(-1,0,5000)
                     self.player_power = buttons.index(button) #gives the chosen power via button index (which aligns with the power enumeration)
                 if button.is_hovered(mouse_pos, mouse_pressed):
                     if button.image.get_alpha() != 255:
