@@ -370,8 +370,8 @@ class Player(pygame.sprite.Sprite): #The Player
             elif self.power == 2:
                 #self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 SFX.orb_special.play()
-                self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+48,self.game.mouse_pos[1]+50))
-                self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]-50))
+                self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
+                #self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]-50))
 
 ############################# PLAYER ATTACKS
 
@@ -533,8 +533,10 @@ class SpecialAttack(pygame.sprite.Sprite):
             for hit in hits:
                 if not self.has_collided:
                     try:
+                        
                         hit.health -= 1
                         if self.game.player.power == 0:
+                            hit.health -=1
                             SFX.sword_special_hit.play()
                         self.has_collided = True
                     except:
@@ -714,14 +716,46 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         pass
 ####
 class EnemyHealthBar(pygame.sprite.Sprite):
-    pass
+    def __init__(self, enemy):
+        self.enemy = enemy
+        self._layer = 7
+        self.groups = self.enemy.game.profile
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.x = 9 * TILESIZE
+        self.y = 24
+        self.max_health_bar = Image(self.enemy.game, self.x, self.y, self.enemy.game.enemy_health_spritesheet.get_sprite(336,0,336,192),5) #gets the max health from the profile UI spritesheet
+        self.health_bar = Image(self.enemy.game, self.x, self.y, self.enemy.game.enemy_health_spritesheet.get_sprite(336*4,192,336,192), 5) #gets the current health from the profile UI spritesheet
+        self.max_health_dots = Image(self.enemy.game,self.x,self.y,self.enemy.game.enemy_health_spritesheet.get_sprite(336*4,192*2,336,192)) #gets the max mana from the profile UI spritesheet
+        self.health_dots = Image(self.enemy.game,self.x,self.y,self.enemy.game.enemy_health_spritesheet.get_sprite(336*3,192*3,336,192), 5) #gets the max mana from the profile UI spritesheet
+        self.image = pygame.Surface((0,0))
+        self.image.set_alpha(0)
+        self.rect = self.image.get_rect() #gets the correct player to display in the profile UI
+        self.rect.x,self.rect.y = self.x, self.y
+
+    def update(self): #updates all the parts of the profile
+        self.max_health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(self.enemy.max_health / 2 - 2),0,52*6,48) #updates the max health based on the max health
+        self.health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(self.enemy.health),48,52*6,48)
+        self.max_health_dots.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(int(self.enemy.max_health / 50) - 1 if self.enemy.max_health > 50 else 0),96,52*6,48)
+        self.health_dots.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(int(self.enemy.health / 50) - 1 if self.enemy.health > 50 else 0),144,52*6,48)
+        
+        if self.enemy.health > 0:
+            self.max_health_bar.image.set_alpha(255)
+            self.health_bar.image.set_alpha(255)
+            self.max_health_dots.image.set_alpha(255)
+            self.health_dots.image.set_alpha(255)
+        else:
+            self.max_health_bar.image.set_alpha(0)
+            self.health_bar.image.set_alpha(0)
+            self.max_health_dots.image.set_alpha(0)
+            self.health_dots.image.set_alpha(0)
+            
 ##############
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, game, x=7, y=7, image_coords = (0,0),has_weapon = True):
         self.game = game
-        self.health = 10
+        self.max_health = 10
+        self.health = self.max_health
         self.speed = 1.5
-
 
         self.has_weapon = has_weapon
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
@@ -797,6 +831,10 @@ class Enemy(pygame.sprite.Sprite):
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
                 self.last_hit = pygame.time.get_ticks()
+                if self.game.enemy_health_display == None:
+                    self.game.enemy_health_display = EnemyHealthBar(self)
+                else:
+                    self.game.enemy_health_display.enemy = self
                 try:
                     if self.game.player.mana + 0.05 < self.game.player.max_mana:
                         self.game.player.mana += 0.05
@@ -829,7 +867,8 @@ class Thief(Enemy):
         super().__init__(game, x, y, (0,0))
         self.shuriken_cooldown = 7500
         self.last_shuriken = pygame.time.get_ticks() + random.randint(0,7500)
-        self.health = 12
+        self.max_health = 12
+        self.health = self.max_health
         self.shuriken_image = self.game.enemy_spritesheet.get_sprite(6,48+6,36,36)
     def throw_shuriken(self):
         if (pygame.time.get_ticks() - self.last_shuriken > self.shuriken_cooldown or self.last_shuriken == 0):
@@ -877,7 +916,8 @@ class Archer(Enemy):
         self.arrow_cooldown = 5000
         self.last_arrow = pygame.time.get_ticks() + random.randint(0,5000)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.health = 8
+        self.max_health = 12
+        self.health = self.max_health
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(48,96,18,48)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
@@ -938,7 +978,8 @@ class Defender(Enemy):
         self.arrow_cooldown = 5000
         self.last_arrow = pygame.time.get_ticks() + random.randint(0,1000)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.health = 15
+        self.max_health = 18
+        self.health = self.max_health
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(96,96,24,48)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
@@ -995,7 +1036,8 @@ class Warrior(Enemy):
         self.cooldown = 4090
         self.last_arrow = pygame.time.get_ticks() + random.randint(0,4090)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.health = 20
+        self.max_health = 22
+        self.health = self.max_health
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(144,114,84,30)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
@@ -1037,7 +1079,8 @@ class Sentry(Enemy):
         self.arrow_cooldown = 10000
         self.last_arrow = pygame.time.get_ticks() + 2500
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.health = 10
+        self.max_health = 8
+        self.health = self.max_health
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(48*4,48,18,48)
         self.shoot_limit = 10
         self.shoot_count = 0

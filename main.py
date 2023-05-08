@@ -23,14 +23,16 @@ class Game:
 
         self.attack_spritesheet = Spritesheet("Assets/Objects/attacks.png")
         self.weapon_spritesheet = Spritesheet("Assets/Objects/weapons.png")
+        
         self.profile_spritesheet = Spritesheet("Assets/UI/profile.png") #Spritesheet all UI related things for the player! (HP, MP, XP, Spells)
         
         self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
+        self.enemy_health_spritesheet = Spritesheet("Assets/UI/enemy_hp.png")
+        self.enemy_health_display = None
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
-
         self.level = 1
         self.area = 1
         self.level_cleared = True
@@ -185,7 +187,6 @@ class Game:
                     game_complete = False
                     global g
                     g = Game()
-            print(floor(pygame.time.get_ticks() / 1000))
                     
             self.screen.fill(BLACK)
 
