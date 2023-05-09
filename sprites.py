@@ -3,9 +3,10 @@ from audio import *
 import pygame, random
 from math import *
 
-class Spritesheet:
+class Spritesheet: #The spritesheet handler for the game
     def __init__(self, file) -> None:
         self.sheet = pygame.image.load(file).convert_alpha()
+    
     def get_sprite(self, x, y, width, height):
         sprite = pygame.Surface([width,height])
         sprite.blit(self.sheet, (0,0), (x,y,width,height))
@@ -30,12 +31,14 @@ class Background(pygame.sprite.Sprite):
         self.color_direction = [1,1,1]
         if self.game.area == 5 and self.game.level == 5:
             self.image = pygame.Surface((WIN_WIDTH,WIN_HEIGHT))
+    
     def update(self):
         if self.game.area == 5 and self.game.level == 5:
             self.color_change()
             self.image.fill(tuple(self.color),self.image.get_rect())
             pygame.display.update()
-    def color_change(self):
+    
+    def color_change(self): #for the final boss, changes the colour spectrum randomly over a smooth direction 
         for x in range(3):
             self.color[x] += self.color_direction[x]
             if self.color[x] >= 255 or self.color[x] <= 0:
@@ -47,10 +50,8 @@ class Background(pygame.sprite.Sprite):
             if self.color[x] < 0:
                 self.color[x] = 0
                 self.color_direction = [random.randint(-1,1),random.randint(-1,1),random.randint(-1,1)]
-            
 
 ##########################################
-
 class Profile(pygame.sprite.Sprite): #Profile Handler for Player
     def __init__(self, player):
         self.player = player
@@ -69,8 +70,6 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
         self.rect = self.image.get_rect() #gets the correct player to display in the profile UI
         self.rect.x = self.x 
         self.rect.y = self.y 
-        #0, 336*3, 336*6
-        #336, 336*4, 336*7
         self.original_health_bar = self.health_bar.image
         
         self.health_alert_animation = 0 #value for calculating timing for the alert flashing
@@ -155,12 +154,15 @@ class Player(pygame.sprite.Sprite): #The Player
             1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
             2:[]  #Acuity Stat Tree (For pygame project part 2!)
         }
+        
+        
         self.level = 1
         self.max_health = 4
         self.health = self.max_health
         
         self.max_mana = 3
         self.mana = self.max_mana
+
         self.experience = 0
         self.max_experience = self.level * 2 + 6
 
@@ -186,15 +188,17 @@ class Player(pygame.sprite.Sprite): #The Player
         self.weapon_copy = Image(self.game,self.x+30,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
 
         self.dash_cooldown = 2000
+
         self.basic_cooldowns = [600,500,800] #cooldowns for basic attacks
         self.basic_cooldown = self.basic_cooldowns[self.power]
 
-        
         self.special_cooldown = 1000
         self.last_dashed = 0
         self.last_basic = 0
         self.special_basic = False
+        
         self.dashing = 1
+        self.guarding = False
         self.last_special = 0
 
         self.hit_cooldown = 600
@@ -204,10 +208,6 @@ class Player(pygame.sprite.Sprite): #The Player
     def update(self):
         self.animate()
         self.movement()
-        self.rect.x += self.x_change
-        self.rect.y += self.y_change
-        self.x = self.rect.x
-        self.y = self.rect.y
         self.collide()
         self.x_change = 0
         self.y_change = 0
@@ -225,9 +225,10 @@ class Player(pygame.sprite.Sprite): #The Player
         self.max_experience = self.level * 2 + 6
         self.max_health += 2
         self.health += 2
-        if self.level % 2 == 0:
+        if self.level % 3 == 0:
             self.max_mana += 1
             self.mana += 1
+    
     def level_clear_check(self): #checks if the level has been cleared and that the player is on the top of the level
         if self.y <= 0 and self.game.level_cleared:
             self.rect.y = WIN_HEIGHT - 32
@@ -255,12 +256,14 @@ class Player(pygame.sprite.Sprite): #The Player
 
         self.x_change *= self.dashing
         self.y_change *= self.dashing
-
         if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 8.5:
             self.dashing = 1
-
-        if keys[pygame.K_SPACE]:
+        if keys[pygame.K_SPACE] and not self.guarding:
             self.dash()
+        if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT] and not self.dashing:
+            self.guard()
+        else:
+            self.guarding = False
         if self.x_change == 0:
             if self.y_change > 0:
                 self.facing = "down"
@@ -282,6 +285,14 @@ class Player(pygame.sprite.Sprite): #The Player
                     self.facing = "up_left"
                 elif self.x_change > 0:
                     self.facing = "up_right"
+        
+        if self.guarding:
+            self.x_change *= 0.2
+            self.y_change *= 0.2
+        self.rect.x += self.x_change
+        self.rect.y += self.y_change
+        self.x = self.rect.x
+        self.y = self.rect.y
 
     def collide(self):
         if self.y > (WIN_HEIGHT - TILESIZE):
@@ -300,11 +311,12 @@ class Player(pygame.sprite.Sprite): #The Player
                 SFX.player_hurt.play()
                 self.health -= 1
                 self.times_hit += 1
+        
+        #Checks if the player dashed, or got hit (to become transparent to show i-frames)
         if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown or pygame.time.get_ticks() - self.last_dashed < self.dash_cooldown / 3:
             self.image.set_alpha(100)
         else:
             self.image.set_alpha(255)
-
     
     def handle_weapon(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -337,6 +349,12 @@ class Player(pygame.sprite.Sprite): #The Player
             self.mana -= 1
             SFX.dash.play()
             self.last_dashed = pygame.time.get_ticks()
+    def guard(self):
+        if self.guarding == False:
+            PlayerGuard(self.game,self.x,self.y)
+            self.guarding = True
+        
+        
     def basic_attack(self):
         if (pygame.time.get_ticks() - self.last_basic > self.basic_cooldown or self.last_basic == 0):
             self.last_basic = pygame.time.get_ticks()
@@ -372,9 +390,43 @@ class Player(pygame.sprite.Sprite): #The Player
                 SFX.orb_special.play()
                 self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 #self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-48,self.game.mouse_pos[1]-50))
+### GUARD
+
+class PlayerGuard(pygame.sprite.Sprite):
+    def __init__(self,game,x,y) -> None:
+        self.x = x
+        self.y = y
+        self.width = TILESIZE
+        self.height = TILESIZE
+        self.game = game
+        self.is_shield = True
+        self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.players
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.mouse_x, self.mouse_y = self.game.mouse_pos
+        self.angle = (180 / pi) * -atan2(self.mouse_y-self.y, self.mouse_x-self.x)-90
+        self.x_vel = cos(self.angle)
+        self.y_vel = sin(self.angle)
+
+        self.image = self.game.character_spritesheet.get_sprite(240,18,96,30) #shield image
+        self.image = pygame.transform.rotate(self.image,self.angle)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+        self.image.set_alpha(0)
+        self.alpha = 0
+    def update(self):
+        if self.alpha < 255 and self.game.player.guarding:
+            self.image.set_alpha(self.alpha)
+            self.alpha += 10
+        if not self.game.player.guarding:
+            self.kill()
+        self.rect.x = self.game.player.x - (self.x_vel *90)
+        self.rect.y = self.game.player.y - (self.y_vel *90)
+        self.x = self.rect.x 
+        self.y = self.rect.y 
 
 ############################# PLAYER ATTACKS
-
 class BasicAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos,makes_sound = False) -> None:
         self.x = x
@@ -421,6 +473,7 @@ class BasicAttack(pygame.sprite.Sprite):
         self.animation_frame = 0
         self.has_collided = False
         self.is_special = self.game.player.special_basic #if the basic attack is special
+    
     def update(self):
         self.collide()
         if self.game.player.power == 0:
@@ -459,13 +512,8 @@ class BasicAttack(pygame.sprite.Sprite):
         if hits:
             for hit in hits:
                 if not self.has_collided:
-                    try:
-                        if self.is_special:
-                            hit.health -= 1
-                        else:
-                            hit.health -= 1
-                    except:
-                        pass
+                    try: hit.health -= 1
+                    except: pass
             if not self.has_collided and self.makes_sound:
                 if self.game.player.power == 0:
                     if len(hits) == 1:
@@ -477,8 +525,6 @@ class BasicAttack(pygame.sprite.Sprite):
                 else:
                     self.hit_sfx.play()
             self.has_collided = True
-                    
-###
 
 class SpecialAttack(pygame.sprite.Sprite):
     def __init__(self,game,x,y,mouse_pos) -> None:
@@ -685,8 +731,8 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         self.target_x, self.target_y = target_pos
         self.speed = speed
         self.angle = atan2(y-self.target_y,x-self.target_x)
-        self.x_vel = cos(self.angle) * self.speed
-        self.y_vel = sin(self.angle) * self.speed
+        self.x_vel = cos(self.angle)
+        self.y_vel = sin(self.angle) 
         
         self.image = image
         
@@ -699,10 +745,13 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
         self.image = self.arrow_copy
         self.animation_frame = 0
+
+        self.has_collided = False
     def update(self):
-        self.x -= self.x_vel
-        self.y -= self.y_vel
+        self.x -= self.x_vel* self.speed
+        self.y -= self.y_vel* self.speed
         self.custom_update()
+        self.collide()
         self.rect.x = self.x
         self.rect.y = self.y
         if self.x > WIN_WIDTH or self.x < -TILESIZE:
@@ -712,6 +761,16 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         if self.game.level != self.current_level:
             self.kill()
         pygame.time.delay(0)
+    def collide(self):
+        hits = pygame.sprite.spritecollide(self,self.game.players,False)
+        if hits:
+            try:
+                for hit in hits:
+                    if hit.is_shield and not self.has_collided:
+                        self.speed *= -1
+                        print("collided")
+                        self.has_collided = True
+            except: pass
     def custom_update(self): #for custom objects to have certain perameters and functions that update
         pass
 ####

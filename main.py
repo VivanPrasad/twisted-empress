@@ -83,12 +83,14 @@ class Game:
 
         self.all_sprites = pygame.sprite.LayeredUpdates()
         self.players = pygame.sprite.LayeredUpdates() #Stores all players (for future implementation)
-        self.walls = pygame.sprite.LayeredUpdates() #Stores all wall sprites
         self.enemies = pygame.sprite.LayeredUpdates() #Stores all enemy sprites
-        self.drops = pygame.sprite .LayeredUpdates() #Stores all the prize drops 
+
+        self.drops = pygame.sprite .LayeredUpdates() #Stores all the prize drops
         self.attacks = pygame.sprite.LayeredUpdates() #Stores all attack hitbox sprites for the player
         self.profile = pygame.sprite.LayeredUpdates() #Stores the Player's HP, MP and XP
+        
         self.background = Background(self,self.level-1,self.area-1) #0 plains | 1 desert | 2 forest | 3 castle
+        
         self.player = Player(self, 7, 7, self.player_power)
 
         while self.running == True:
@@ -98,9 +100,7 @@ class Game:
         sys.exit()
     def events(self):
         #game loop events
-
-        mouse_pos = pygame.mouse.get_pos()
-        self.mouse_pos = mouse_pos
+        self.mouse_pos = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.playing = False
