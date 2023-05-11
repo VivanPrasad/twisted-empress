@@ -40,14 +40,14 @@ class Game:
         self.enemies_remaining = 0
 
         self.level_data = [
-            [ #AREA 1 - MIGHTY MEADOWS
+            [ #AREA 1 - THE MEADOWS
                 [], #Level 1-1 (Empty)
                 [lambda:Thief(self),lambda:Archer(self,5,0),lambda:Archer(self,14,0)], #Level 1-2
                 [lambda:Thief(self,4,2),lambda:Thief(self,10,2),lambda:Archer(self,2,2)], #Level 1-3
                 [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,10,4)], #Level 1-4
                 [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2),lambda: Thief(self,13,2)]
             ], #Boss Level 1-5
-            [ #AREA 2 - DESERT
+            [ #AREA 2 - THE DESERT
                 [],
                 [lambda:Defender(self,7,7),lambda:Sentry(self,9,1),lambda:Defender(self,3,7)],
                 [lambda:Sentry(self,4,4),lambda:Defender(self,5,5),lambda:Sentry(self,10,4),lambda:Sentry(self,10,10),lambda:Sentry(self,4,10)],

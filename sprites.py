@@ -52,6 +52,7 @@ class Background(pygame.sprite.Sprite):
                 self.color_direction = [random.randint(-1,1),random.randint(-1,1),random.randint(-1,1)]
 
 ##########################################
+
 class Profile(pygame.sprite.Sprite): #Profile Handler for Player
     def __init__(self, player):
         self.player = player
@@ -792,8 +793,8 @@ class EnemyHealthBar(pygame.sprite.Sprite):
         self.rect.x,self.rect.y = self.x, self.y
 
     def update(self): #updates all the parts of the profile
-        self.max_health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(self.enemy.max_health / 2 - 2),0,52*6,48) #updates the max health based on the max health
-        self.health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(self.enemy.health),48,52*6,48)
+        self.max_health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*((self.enemy.max_health / 2 - 2) if self.enemy.max_health <= 50 else 50),0,52*6,48) #updates the max health based on the max health
+        self.health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(self.enemy.health % 50),48,52*6,48)
         self.max_health_dots.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(int(self.enemy.max_health / 50) - 1 if self.enemy.max_health > 50 else 0),96,52*6,48)
         self.health_dots.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(int(self.enemy.health / 50) - 1 if self.enemy.health > 50 else 0),144,52*6,48)
         
@@ -1095,7 +1096,7 @@ class Warrior(Enemy):
         self.cooldown = 4090
         self.last_arrow = pygame.time.get_ticks() + random.randint(0,4090)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.max_health = 22
+        self.max_health = 250
         self.health = self.max_health
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(144,114,84,30)
     def throw_arrow(self):
