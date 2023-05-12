@@ -106,8 +106,9 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
         elif self.health_alert_animation == 0:
             SFX.low_hp_alert.stop()
             self.health_alert_playing = False
+    
     def flashing_health(self,once):
-        if once:
+        if once: #plays the flash once when hit once
             self.original_health_bar = self.health_bar.image
             self.hit_image = self.health_bar.image.copy()
             var = pygame.PixelArray(self.hit_image)
@@ -115,7 +116,7 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
             var.replace(pygame.Color(69,147,165),pygame.Color(255,25,25))
             del var
             self.health_bar.image = self.hit_image
-        else:
+        else: #plays the alert sound and repeatedly flashes on low health
             self.health_alert_animation += 0.025
             if floor(self.health_alert_animation) >= 1:
                 self.original_health_bar = self.health_bar.image
@@ -134,7 +135,7 @@ class Image(pygame.sprite.Sprite): #Images without any functions or movement (ju
     def __init__(self,game, x, y, image,layer = 4):
         self.game = game
         self._layer = layer
-        self.groups = self.game.profile
+        self.groups = self.game.profile #sets to the profile sprite group, which is on a higher layer
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = x
         self.y = y
@@ -155,7 +156,6 @@ class Player(pygame.sprite.Sprite): #The Player
             1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
             2:[]  #Acuity Stat Tree (For pygame project part 2!)
         }
-        
         
         self.level = 1
         self.max_health = 4
@@ -350,6 +350,7 @@ class Player(pygame.sprite.Sprite): #The Player
             self.mana -= 1
             SFX.dash.play()
             self.last_dashed = pygame.time.get_ticks()
+    
     def guard(self):
         if self.guarding == False:
             PlayerGuard(self.game,self.x,self.y)
@@ -719,6 +720,7 @@ class ManaOrb(pygame.sprite.Sprite): #Mana Orbs that drop when killing an enemy
                 
 
 ############### Enemy Stuffs
+
 class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can change the image and also the target position!! Easy :)
     def __init__(self,game,x,y,target_pos,image,speed=4) -> None:
         self.x = x
@@ -774,6 +776,7 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
             except: pass
     def custom_update(self): #for custom objects to have certain perameters and functions that update
         pass
+
 ####
 class EnemyHealthBar(pygame.sprite.Sprite):
     def __init__(self, enemy):

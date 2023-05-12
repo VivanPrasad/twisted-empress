@@ -18,6 +18,7 @@ class Music:
     the_prince = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_prince.mp3"); the_prince.set_volume(0.9)
     the_empress = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_empress.mp3"); the_empress.set_volume(0.9)
     boss_music = [the_rogue,the_guardian,the_wizard,the_prince,the_empress]
+
 class SFX: #All the SFX are stored as variables in a class to be played at anytime!
     health_orb = pygame.mixer.Sound('Assets/Audio/SFX/Objects/health_orb.wav'); health_orb.set_volume(1.5)
     mana_orb = pygame.mixer.Sound('Assets/Audio/SFX/Objects/mana_orb.wav'); mana_orb.set_volume(0.9)
