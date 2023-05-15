@@ -3,6 +3,8 @@ from audio import *
 import pygame, random
 from math import *
 
+from config import TILESIZE
+
 class Spritesheet: #The spritesheet handler for the game
     def __init__(self, file) -> None:
         self.sheet = pygame.image.load(file).convert_alpha()
@@ -308,10 +310,17 @@ class Player(pygame.sprite.Sprite): #The Player
         hits = pygame.sprite.spritecollide(self,self.game.enemies, False)
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown and pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 3:
-                self.last_hit = pygame.time.get_ticks()
-                SFX.player_hurt.play()
-                self.health -= 1
-                self.times_hit += 1
+                try:
+                    if hits[0].can_hurt:
+                        self.last_hit = pygame.time.get_ticks()
+                        SFX.player_hurt.play()
+                        self.health -= 1
+                        self.times_hit += 1
+                except:
+                    self.last_hit = pygame.time.get_ticks()
+                    SFX.player_hurt.play()
+                    self.health -= 1
+                    self.times_hit += 1
         
         #Checks if the player dashed, or got hit (to become transparent to show i-frames)
         if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown or pygame.time.get_ticks() - self.last_dashed < self.dash_cooldown / 3:
@@ -777,6 +786,60 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
     def custom_update(self): #for custom objects to have certain perameters and functions that update
         pass
 
+class GroundAttack(pygame.sprite.Sprite):
+    def __init__(self,game,x,y,spritesheet,frames,rect_x=TILESIZE,rect_y=TILESIZE,time = 0.1) -> None:
+        self.x = x
+        self.y = y
+        self.game = game
+        self._layer = PLAYER_LAYER-1 #Bottom BG, Enemies, Attacks, UI
+        self.groups = self.game.enemies
+        pygame.sprite.Sprite.__init__(self, self.groups)
+        self.spritesheet = spritesheet
+        self.image = spritesheet.get_sprite(0,0,rect_x,rect_y)
+        self.rect = self.image.get_rect()
+        self.rect_x = rect_x
+        self.rect_y = rect_y
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+        self.time = time #amount of frames for showing each frame
+        self.frames = frames #The maximum count of animations to be incremented
+
+        self.alpha = 255
+        self.current_level = self.game.level
+        self.can_hurt = False
+        self.animation_frame = 0
+
+        self.has_collided = False
+    def update(self):
+        self.custom_update()
+        self.collide()
+        self.animate()
+        if self.game.level != self.current_level:
+            self.kill()
+        pygame.time.delay(0)
+    def animate(self):
+        self.image = self.spritesheet.get_sprite(floor(self.animation_frame)*self.rect_x,0,self.rect_x,self.rect_y)
+        self.image.set_alpha(int(self.alpha))
+        
+        if self.animation_frame > self.frames / 2:
+            self.can_hurt = True
+            self.alpha -= 0.5
+        if self.animation_frame < self.frames:
+            self.animation_frame += self.time
+        else:
+            self.kill()
+    def collide(self):
+        hits = pygame.sprite.spritecollide(self,self.game.players,False)
+        if hits:
+            try:
+                for hit in hits:
+                    if hit.is_shield and not self.has_collided:
+                        print("collided")
+                        self.has_collided = True
+            except: pass
+    def custom_update(self): #for custom objects to have certain perameters and functions that update
+        pass
 ####
 class EnemyHealthBar(pygame.sprite.Sprite):
     def __init__(self, enemy):
@@ -1035,7 +1098,7 @@ class Rock(Projectile):
         else:
             self.x_vel = cos(pygame.time.get_ticks()) *2
             self.y_vel = sin(pygame.time.get_ticks()) *2
-class Defender(Enemy):
+class Bandit(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(2,0))
         self.arrow_cooldown = 5000
@@ -1079,7 +1142,51 @@ class Defender(Enemy):
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
-
+class SandAttack(GroundAttack):
+    def __init__(self, game, x, y, spritesheet, frames, time=0.1) -> None:
+        super().__init__(game, x, y, spritesheet, frames, 64, 64, time)
+class Sandrider(Enemy):
+    def __init__(self, game, x,y):
+        super().__init__(game, x, y,(3,0))
+        self.arrow_cooldown = 3000
+        self.last_arrow = pygame.time.get_ticks()
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.max_health = 18
+        self.health = self.max_health
+    def throw_arrow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.last_arrow = pygame.time.get_ticks()
+            self.arrow_cooldown = random.randint(800,5000)
+            SandAttack(self.game,self.game.player.x,self.game.player.y,self.game.sand_rise,10)
+    def chase(self):
+        self.roam()
+    def roam(self):
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+        
+        if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
+            self.throw_arrow()
+            self.speed = 2
+        if pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown:
+            self.player_x, self.player_y = self.game.player.x,self.game.player.y
+            dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+            self.speed = -2
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(0,0)
+            self.speed = 0
+        # Move along this normalized vector towards the player at current speed.
+        
+        self.x_change, self.y_change = dirvect.x, dirvect.y
+    def death_loot(self):
+        self.game.player.experience += 3
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
 class WarriorStrike(Projectile):
     def __init__(self, game, x, y, target_pos, image, speed=4, decay=0) -> None:
         super().__init__(game, x, y, target_pos, image, speed)
