@@ -791,7 +791,7 @@ class GroundAttack(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.game = game
-        self._layer = PLAYER_LAYER-1 #Bottom BG, Enemies, Attacks, UI
+        self._layer = 1 #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.enemies
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.spritesheet = spritesheet
@@ -824,7 +824,7 @@ class GroundAttack(pygame.sprite.Sprite):
         
         if self.animation_frame > self.frames / 2:
             self.can_hurt = True
-            self.alpha -= 0.5
+            self.alpha -= 5
         if self.animation_frame < self.frames:
             self.animation_frame += self.time
         else:
@@ -1106,14 +1106,14 @@ class Bandit(Enemy):
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.max_health = 18
         self.health = self.max_health
-        self.arrow_image = self.game.enemy_spritesheet.get_sprite(96,96,24,48)
+        self.rock_image = self.game.enemy_spritesheet.get_sprite(96,96,24,48)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
             self.arrow_cooldown = random.randint(800,5000)
-            Rock(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image)
-            Rock(self.game,self.x-32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots two arrows towards the player in a triple shot format
+            Rock(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.rock_image)
+            Rock(self.game,self.x-32,self.y,(self.game.player.x,self.game.player.y),self.rock_image) #shoots two arrows towards the player in a triple shot format
     def chase(self):
         self.roam()
     def roam(self):
