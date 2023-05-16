@@ -395,6 +395,7 @@ class Player(pygame.sprite.Sprite): #The Player
                 #self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 SFX.throw_two.play()
                 self.special = SpecialAttack(self.game, self.x+16,self.y, (self.game.mouse_pos[0]+45,self.game.mouse_pos[1]+50))
+                self.special = SpecialAttack(self.game, self.x,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
                 self.special = SpecialAttack(self.game, self.x+48,self.y, (self.game.mouse_pos[0]-45,self.game.mouse_pos[1]-50))
             elif self.power == 2:
                 #self.special = SpecialAttack(self.game, self.x+32,self.y, (self.game.mouse_pos[0],self.game.mouse_pos[1]))
@@ -591,9 +592,8 @@ class SpecialAttack(pygame.sprite.Sprite):
                 if not self.has_collided:
                     try:
                         
-                        hit.health -= 1
+                        hit.health -= 2 if self.game.player.power != 2 else 1
                         if self.game.player.power == 0:
-                            hit.health -=1
                             SFX.sword_special_hit.play()
                         self.has_collided = True
                     except:
@@ -791,7 +791,7 @@ class GroundAttack(pygame.sprite.Sprite):
         self.x = x
         self.y = y
         self.game = game
-        self._layer = 1 #Bottom BG, Enemies, Attacks, UI
+        self._layer = PLAYER_LAYER+1 #Bottom BG, Enemies, Attacks, UI
         self.groups = self.game.enemies
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.spritesheet = spritesheet
@@ -822,9 +822,9 @@ class GroundAttack(pygame.sprite.Sprite):
         self.image = self.spritesheet.get_sprite(floor(self.animation_frame)*self.rect_x,0,self.rect_x,self.rect_y)
         self.image.set_alpha(int(self.alpha))
         
-        if self.animation_frame > self.frames / 2:
+        if self.animation_frame > self.frames / 1.2:
             self.can_hurt = True
-            self.alpha -= 5
+            self.alpha -= 15
         if self.animation_frame < self.frames:
             self.animation_frame += self.time
         else:
@@ -1106,7 +1106,7 @@ class Bandit(Enemy):
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.max_health = 18
         self.health = self.max_health
-        self.rock_image = self.game.enemy_spritesheet.get_sprite(96,96,24,48)
+        self.rock_image = self.game.enemy_spritesheet.get_sprite(96,96,48,48)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
@@ -1153,21 +1153,28 @@ class Sandrider(Enemy):
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.max_health = 18
         self.health = self.max_health
-    def throw_arrow(self):
+    def sandfall(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.speed = 2
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
             self.arrow_cooldown = random.randint(800,5000)
             SandAttack(self.game,self.game.player.x,self.game.player.y,self.game.sand_rise,10)
+    
+    def dash(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0):
+            self.player_x, self.player_y = self.game.player.x,self.game.player.y
+            self.last_arrow = pygame.time.get_ticks()
+            self.arrow_cooldown = 400
+            SandAttack(self.game,self.x,self.y,self.game.sand_rise,10)
+            self.speed = 5
     def chase(self):
         self.roam()
     def roam(self):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
-        
         if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
-            self.throw_arrow()
-            self.speed = 2
+            random.choice([self.sandfall,self.dash])()
         if pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown:
             self.player_x, self.player_y = self.game.player.x,self.game.player.y
             dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
@@ -1186,7 +1193,7 @@ class Sandrider(Enemy):
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
-        HealthOrb(self.game,self.x,self.y)
+        ManaOrb(self.game,self.x,self.y)
 class WarriorStrike(Projectile):
     def __init__(self, game, x, y, target_pos, image, speed=4, decay=0) -> None:
         super().__init__(game, x, y, target_pos, image, speed)
@@ -1202,29 +1209,38 @@ class WarriorStrike(Projectile):
             self.kill()
 class Warrior(Enemy):
     def __init__(self, game, x,y):
-        super().__init__(game, x, y,(3,0))
-        self.cooldown = 4090
-        self.last_arrow = pygame.time.get_ticks() + random.randint(0,4090)
+        super().__init__(game, x, y,(5,0))
+        self.cooldown = 800
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,8090)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.max_health = 250
+        self.max_health = 30
         self.health = self.max_health
-        self.arrow_image = self.game.enemy_spritesheet.get_sprite(144,114,84,30)
+        self.arrow_image = self.game.enemy_spritesheet.get_sprite(240,144,96,30)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 1
             self.last_arrow = pygame.time.get_ticks()
-            self.cooldown = 4090
-            WarriorStrike(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,5) #shoots three arrows towards the player in a triple shot format
+            self.cooldown = random.randrange(500,5000)
+            WarriorStrike(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,7) #shoots three arrows towards the player in a triple shot format
     def chase(self):
         self.roam()
+    def dash(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 5
+            WarriorStrike(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,7)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 400
     def roam(self):
         # Find direction vector (dx, dy) between enemy and player.
-        self.player_x,self.player_y = self.game.player.x,self.game.player.y
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         
         if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
-            self.throw_arrow()
-            self.speed = 1
+            if random.randint(0,1):
+                self.throw_arrow()
+            else:
+                self.dash()
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
             self.speed = -3
         if dirvect.x != 0 and dirvect.y != 0:
@@ -1232,6 +1248,8 @@ class Warrior(Enemy):
             dirvect.scale_to_length(self.speed)
         else:
             dirvect = pygame.math.Vector2(0,0)
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            print("reached position")
             self.speed = 0
         # Move along this normalized vector towards the player at current speed.
         
@@ -1259,7 +1277,7 @@ class Sentry(Enemy):
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
             if self.shoot_count != self.shoot_limit:
-                self.arrow_cooldown = 300
+                self.arrow_cooldown = 400
                 self.shoot_count += 1
             else:
                 self.arrow_cooldown = random.randint(7000,10000)

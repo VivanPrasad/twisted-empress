@@ -34,7 +34,7 @@ class Game:
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
         self.level = 1
-        self.area = 2
+        self.area = 3
         self.level_cleared = True
         self.player_power = 0
         self.enemies_remaining = 0
@@ -51,8 +51,8 @@ class Game:
                 [],
                 [lambda:Sandrider(self,7,7),lambda:Sentry(self,9,1),lambda:Bandit(self,3,7)],
                 [lambda:Sentry(self,4,4),lambda:Bandit(self,5,5),lambda:Sentry(self,10,4),lambda:Sentry(self,10,10),lambda:Sentry(self,4,10)],
-                [lambda:Warrior(self,8,1),lambda:Sentry(self,4,2),lambda:Bandit(self,3,5),lambda:Warrior(self,10,10),lambda:Warrior(self,6,1)],
-                [lambda:Warrior(self,8,1),lambda:Warrior(self,2,1),lambda:Bandit(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Sentry(self,13,1),lambda:Warrior(self,5,10),lambda:Bandit(self,3,5)],
+                [lambda:Sandrider(self,8,1),lambda:Sentry(self,4,2),lambda:Bandit(self,3,5),lambda:Sandrider(self,10,10),lambda:Sandrider(self,6,1)],
+                [lambda:Sandrider(self,8,1),lambda:Sandrider(self,2,1),lambda:Bandit(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Sentry(self,1,13),lambda:Bandit(self,5,10),lambda:Bandit(self,3,5)],
             ],
             [ #AREA 3 - THE ENCHANTED FOREST
                 [],
