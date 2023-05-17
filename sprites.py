@@ -780,7 +780,6 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
                 for hit in hits:
                     if hit.is_shield and not self.has_collided:
                         self.speed *= -1
-                        print("collided")
                         self.has_collided = True
             except: pass
     def custom_update(self): #for custom objects to have certain perameters and functions that update
@@ -835,7 +834,6 @@ class GroundAttack(pygame.sprite.Sprite):
             try:
                 for hit in hits:
                     if hit.is_shield and not self.has_collided:
-                        print("collided")
                         self.has_collided = True
             except: pass
     def custom_update(self): #for custom objects to have certain perameters and functions that update
@@ -1198,13 +1196,13 @@ class WarriorStrike(Projectile):
     def __init__(self, game, x, y, target_pos, image, speed=4, decay=0) -> None:
         super().__init__(game, x, y, target_pos, image, speed)
         self.alpha = 255
-        self.x_vel /= 2
-        self.y_vel /= 2
+        self.x_vel *= 1
+        self.y_vel *= 1
     def custom_update(self):
         self.image.set_alpha(self.alpha)
-        self.alpha -= 1
-        self.x_vel *= 1.01
-        self.y_vel *= 1.01
+        self.alpha -= 6
+        self.x_vel /= 1.08
+        self.y_vel /= 1.08 #Decays
         if self.alpha <= 0:
             self.kill()
 class Warrior(Enemy):
@@ -1227,7 +1225,10 @@ class Warrior(Enemy):
         self.roam()
     def dash(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
-            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            if random.randint(0,1):
+                self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            else:
+                self.player_x,self.player_y = self.game.player.x, self.game.player.y
             self.speed = 5
             WarriorStrike(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,7)
             self.last_arrow = pygame.time.get_ticks()
@@ -1236,20 +1237,20 @@ class Warrior(Enemy):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         
-        if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
+        if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
             if random.randint(0,1):
                 self.throw_arrow()
             else:
                 self.dash()
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
-            self.speed = -3
+            self.player_x,self.player_y = self.game.player.x, self.game.player.y
+            self.speed = 2
         if dirvect.x != 0 and dirvect.y != 0:
             dirvect.normalize()
             dirvect.scale_to_length(self.speed)
         else:
             dirvect = pygame.math.Vector2(0,0)
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-            print("reached position")
             self.speed = 0
         # Move along this normalized vector towards the player at current speed.
         

@@ -34,7 +34,7 @@ class Game:
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
         self.level = 1
-        self.area = 3
+        self.area = 1
         self.level_cleared = True
         self.player_power = 0
         self.enemies_remaining = 0
