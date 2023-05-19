@@ -56,7 +56,7 @@ class Game:
             ],
             [ #AREA 3 - THE ENCHANTED FOREST
                 [],
-                [lambda:Warrior(self,10,8),lambda:Warrior(self,1,8)],
+                [lambda:Warrior(self,10,8),lambda:Warrior(self,1,8),lambda:Archer(self,13,1),lambda:Archer(self,13,13)],
                 [lambda:Warrior(self,8,8),lambda:Warrior(self,1,7),lambda:Archer(self,13,1),lambda:Warrior(self,13,1),lambda:Warrior(self,1,13)],
                 [lambda:Warrior(self,8,8),lambda:Warrior(self,3,8),lambda:Archer(self,5,1),lambda:Archer(self,13,1),lambda:Archer(self,8,1)],
                 [lambda:Warrior(self,8,8),lambda:Thief(self),lambda:Archer(self,3,13)],

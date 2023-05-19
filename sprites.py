@@ -154,7 +154,7 @@ class Player(pygame.sprite.Sprite): #The Player
         self.profile = Profile(self)
         
         self.stat_tree = {
-            0:[], #Lionheart Stat Tree (For pygame project part 2!)
+            0:[{"max_health":6}], #Lionheart Stat Tree (For pygame project part 2!)
             1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
             2:[]  #Acuity Stat Tree (For pygame project part 2!)
         }
@@ -524,7 +524,9 @@ class BasicAttack(pygame.sprite.Sprite):
         if hits:
             for hit in hits:
                 if not self.has_collided:
-                    try: hit.health -= 1
+                    try:   
+                        if hit.can_hit:
+                            hit.health -= 1
                     except: pass
             if not self.has_collided and self.makes_sound:
                 if self.game.player.power == 0:
@@ -914,6 +916,7 @@ class Enemy(pygame.sprite.Sprite):
         self.last_hit = 0
         self.hit_cooldown = 100
         self.alpha = 255
+        self.can_hit = True
     def update(self):
         self.movement()
         if self.has_weapon:
@@ -963,7 +966,7 @@ class Enemy(pygame.sprite.Sprite):
                     if self.game.player.mana + 0.05 < self.game.player.max_mana:
                         self.game.player.mana += 0.05
                 except: pass
-        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown:
+        if (hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown) and self.can_hit:
             self.image = self.hit_image
         else:
             self.image = self.original_image
@@ -1096,6 +1099,10 @@ class Rock(Projectile):
         else:
             self.x_vel = cos(pygame.time.get_ticks()) *2
             self.y_vel = sin(pygame.time.get_ticks()) *2
+class BanditAttack(Projectile):
+    def __init__(self, game, x, y, target_pos, image, speed=4, decay=0) -> None:
+        super().__init__(game, x, y, target_pos, image, speed)
+        self.alpha = 255
 class Bandit(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(2,0))
@@ -1104,14 +1111,25 @@ class Bandit(Enemy):
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.max_health = 18
         self.health = self.max_health
-        self.rock_image = self.game.enemy_spritesheet.get_sprite(96,96,48,48)
+        self.swipe_image = self.game.enemy_spritesheet.get_sprite(96,96,48,48)
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = random.randint(-2,2)
             self.last_arrow = pygame.time.get_ticks()
-            self.arrow_cooldown = random.randint(800,5000)
-            Rock(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.rock_image)
-            Rock(self.game,self.x-32,self.y,(self.game.player.x,self.game.player.y),self.rock_image) #shoots two arrows towards the player in a triple shot format
+            self.arrow_cooldown = 1000
+    def dash(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0):
+            self.player_x,self.player_y = self.game.player.x,self.game.player.y
+            if random.randint(0,1):
+                self.speed = 3
+                BanditAttack(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.swipe_image)
+            else:
+                self.speed = -3
+                BanditAttack(self.game,self.x+32,self.y,(self.game.player.x-10,self.game.player.y-10),self.swipe_image)
+            self.last_arrow = pygame.time.get_ticks()
+            self.arrow_cooldown = 500
+
     def chase(self):
         self.roam()
     def roam(self):
@@ -1119,7 +1137,7 @@ class Bandit(Enemy):
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         
         if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
-            self.throw_arrow()
+            random.choice([self.throw_arrow,self.dash])()
             self.speed = 2
         if pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown:
             self.player_x, self.player_y = self.game.player.x,self.game.player.y
@@ -1151,6 +1169,7 @@ class Sandrider(Enemy):
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.max_health = 18
         self.health = self.max_health
+        self.rock_image = self.game.enemy_spritesheet.get_sprite(156,60,24,24)
     def sandfall(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.speed = 2
@@ -1158,21 +1177,28 @@ class Sandrider(Enemy):
             self.last_arrow = pygame.time.get_ticks()
             self.arrow_cooldown = random.randint(800,5000)
             SandAttack(self.game,self.game.player.x,self.game.player.y,self.game.sand_rise,10)
-    
+    def rocks(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0):
+            Rock(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.rock_image)
+            Rock(self.game,self.x-32,self.y,(self.game.player.x,self.game.player.y),self.rock_image) #shoots two arrows towards the player in a triple shot format
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 3
+            self.last_arrow = pygame.time.get_ticks()
+            self.arrow_cooldown = 2000
     def dash(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0):
             self.player_x, self.player_y = self.game.player.x,self.game.player.y
             self.last_arrow = pygame.time.get_ticks()
             self.arrow_cooldown = 400
             SandAttack(self.game,self.x,self.y,self.game.sand_rise,10)
-            self.speed = 5
+            self.speed = 6
     def chase(self):
         self.roam()
     def roam(self):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         if abs(dirvect.x) > 200.0 or abs(dirvect.y) > 200.0:
-            random.choice([self.sandfall,self.dash])()
+            random.choice([self.sandfall,self.dash,self.rocks])()
         if pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown:
             self.player_x, self.player_y = self.game.player.x,self.game.player.y
             dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
@@ -1196,8 +1222,8 @@ class WarriorStrike(Projectile):
     def __init__(self, game, x, y, target_pos, image, speed=4, decay=0) -> None:
         super().__init__(game, x, y, target_pos, image, speed)
         self.alpha = 255
-        self.x_vel *= 1
-        self.y_vel *= 1
+        self.x_vel *= 1.1
+        self.y_vel *= 1.1
     def custom_update(self):
         self.image.set_alpha(self.alpha)
         self.alpha -= 6
@@ -1214,37 +1240,44 @@ class Warrior(Enemy):
         self.max_health = 30
         self.health = self.max_health
         self.arrow_image = self.game.enemy_spritesheet.get_sprite(240,144,96,30)
+        self.speed = 2.5
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-            self.speed = 1
+            self.speed = 2
+            self.can_hit = True
+            self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
-            self.cooldown = random.randrange(500,5000)
+            self.cooldown = random.randrange(500,2000)
+            WarriorStrike(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,7)
             WarriorStrike(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,7) #shoots three arrows towards the player in a triple shot format
+            WarriorStrike(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,7)
+            WarriorStrike(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,7)
     def chase(self):
         self.roam()
     def dash(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.can_hit = False
+            self.image.set_alpha(125)
             if random.randint(0,1):
                 self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             else:
                 self.player_x,self.player_y = self.game.player.x, self.game.player.y
-            self.speed = 5
+            self.speed = 4.5
             WarriorStrike(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,7)
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = 400
     def roam(self):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
-        
         if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
-            if random.randint(0,1):
+            if random.randint(0,2):
                 self.throw_arrow()
             else:
                 self.dash()
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
             self.player_x,self.player_y = self.game.player.x, self.game.player.y
-            self.speed = 2
+            self.speed = 2.5
         if dirvect.x != 0 and dirvect.y != 0:
             dirvect.normalize()
             dirvect.scale_to_length(self.speed)
