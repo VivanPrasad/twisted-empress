@@ -104,6 +104,7 @@ class Profile(pygame.sprite.Sprite): #Profile Handler for Player
         if self.health_alert_animation > 0 and not self.health_alert_playing:
             SFX.low_hp_alert.set_volume(0.8)
             SFX.low_hp_alert.play()
+            SFX.low_hp_alert.fadeout(2000)
             self.health_alert_playing = True
         elif self.health_alert_animation == 0:
             SFX.low_hp_alert.stop()
@@ -153,12 +154,6 @@ class Player(pygame.sprite.Sprite): #The Player
 
         self.profile = Profile(self)
         
-        self.stat_tree = {
-            0:[{"max_health":6}], #Lionheart Stat Tree (For pygame project part 2!)
-            1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
-            2:[]  #Acuity Stat Tree (For pygame project part 2!)
-        }
-        
         self.level = 1
         self.max_health = 4
         self.health = self.max_health
@@ -190,12 +185,12 @@ class Player(pygame.sprite.Sprite): #The Player
         self.weapon_angle = 90
         self.weapon_copy = Image(self.game,self.x+30,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
 
-        self.dash_cooldown = 2000
+        self.dash_cooldown = 500
 
         self.basic_cooldowns = [600,500,800] #cooldowns for basic attacks
         self.basic_cooldown = self.basic_cooldowns[self.power]
 
-        self.special_cooldown = 1000
+        self.special_cooldown = 500
         self.last_dashed = 0
         self.last_basic = 0
         self.special_basic = False
@@ -207,6 +202,12 @@ class Player(pygame.sprite.Sprite): #The Player
         self.hit_cooldown = 600
         self.last_hit = 0
         self.times_hit = 0
+
+        self.stat_tree = {
+            0:["HP"], #Lionheart Stat Tree (For pygame project part 2!)
+            1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
+            2:[]  #Acuity Stat Tree (For pygame project part 2!)
+        }
 
     def update(self):
         self.animate()
@@ -259,7 +260,7 @@ class Player(pygame.sprite.Sprite): #The Player
 
         self.x_change *= self.dashing
         self.y_change *= self.dashing
-        if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 8.5:
+        if pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 1.5:
             self.dashing = 1
         if keys[pygame.K_SPACE] and not self.guarding:
             self.dash()
@@ -309,7 +310,7 @@ class Player(pygame.sprite.Sprite): #The Player
         
         hits = pygame.sprite.spritecollide(self,self.game.enemies, False)
         if hits:
-            if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown and pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown / 3:
+            if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown and pygame.time.get_ticks() - self.last_dashed > self.dash_cooldown + 500:
                 try:
                     if hits[0].can_hurt:
                         self.last_hit = pygame.time.get_ticks()
@@ -859,10 +860,16 @@ class EnemyHealthBar(pygame.sprite.Sprite):
         self.rect.x,self.rect.y = self.x, self.y
 
     def update(self): #updates all the parts of the profile
-        self.max_health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*((self.enemy.max_health / 2 - 2) if self.enemy.max_health <= 50 else 50),0,52*6,48) #updates the max health based on the max health
+        if self.enemy.max_health > 50: #In case not a perfect value
+            if self.enemy.health > 50:
+                self.max_health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(23),0,52*6,48)
+            else:
+                self.max_health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(22),0,52*6,48) #updates the max health based on the max health
+        else:
+            self.max_health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(((self.enemy.max_health if self.enemy.max_health <= 50 else 50) / 2 - 2)),0,52*6,48) #updates the max health based on the max health
         self.health_bar.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(self.enemy.health % 50),48,52*6,48)
         self.max_health_dots.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(int(self.enemy.max_health / 50) - 1 if self.enemy.max_health > 50 else 0),96,52*6,48)
-        self.health_dots.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(int(self.enemy.health / 50) - 1 if self.enemy.health > 50 else 0),144,52*6,48)
+        self.health_dots.image = self.enemy.game.enemy_health_spritesheet.get_sprite(52*6*(int(self.enemy.health / 50) if self.enemy.health > 50 else 0),144,52*6,48)
         
         if self.enemy.health > 0:
             self.max_health_bar.image.set_alpha(255)
@@ -877,7 +884,7 @@ class EnemyHealthBar(pygame.sprite.Sprite):
             
 ##############
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, game, x=7, y=7, image_coords = (0,0),has_weapon = True):
+    def __init__(self, game, x=7, y=7, image_coords = (0,0),has_weapon = True,width=(48,48)):
         self.game = game
         self.max_health = 10
         self.health = self.max_health
@@ -889,8 +896,8 @@ class Enemy(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = x * TILESIZE
         self.y = y * TILESIZE
-        self.width = TILESIZE
-        self.height = TILESIZE
+        self.width = width[0]
+        self.height = width[1]
 
         self.image = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48,self.width,self.height)
         if self.has_weapon:
@@ -1082,6 +1089,73 @@ class Archer(Enemy):
         HealthOrb(self.game,self.x,self.y)
 # Area 2 Enemies
 
+class Block(Enemy):
+    def __init__(self, game, x, y, target_pos, speed=2,type=1,oneshot=True,wait_time=0,random_wait=False,image_coords=(2,3),image_size=(48,48)) -> None:
+        super().__init__(game,x,y,image_coords,False,image_size)
+        self.speed = speed
+        self.initial_pos = (x*TILESIZE,y*TILESIZE)
+        self.final_pos = (target_pos[0]*TILESIZE, target_pos[1]*TILESIZE)
+        self.state = 0
+        self.health = 8
+        self.oneshot = oneshot
+        self.can_hit = False
+        self.target_x = target_pos[0]*TILESIZE
+        self.target_y = target_pos[1]*TILESIZE
+        self.angle = atan2(self.y-self.target_y,self.x-self.target_x)
+        self.x_change = cos(self.angle)*-1 * self.speed
+        self.y_change = sin(self.angle)*-1 * self.speed
+        self.current_level = self.game.level
+        self.game.enemies_remaining -= 1
+        
+        self.type = type #0 = Constant, 1 = Ease In Out, 2 = Exponential, 3 = 1s Delay, 4 = Random
+        self.last_wait = pygame.time.get_ticks() 
+        self.wait_time = wait_time
+        self.random_wait = random_wait
+    def movement(self):
+        self.tick()
+        if abs(self.x-self.target_x) < 10 and abs(self.y-self.target_y) < 10:
+            if self.state == 0:
+                if self.oneshot == True:
+                    self.alpha -= 3
+                    self.image.set_alpha(self.alpha)
+                    self.x_change,self.y_change = 0,0
+                else:
+                    if self.wait_time == 0 or pygame.time.get_ticks() - self.last_wait > self.wait_time:
+                        self.target_x,self.target_y = self.initial_pos
+                        self.state = 1
+                    else:
+                        self.last_wait = pygame.time.get_ticks()
+                        if self.random_wait == True:
+                            self.wait_time = random.randint(500,2000)
+                        else:
+                            self.wait_time = 1000
+
+            else:
+                self.target_x,self.target_y = self.final_pos
+                self.state = 0
+    def tick(self):
+        self.angle = atan2(self.y-self.target_y,self.x-self.target_x)
+        if self.type == 0:
+            self.x_change = cos(self.angle) * -1 * self.speed*2
+            self.y_change = sin(self.angle) * - 1 * self.speed*2
+        elif self.type == 1:
+            self.x_change = cos(self.angle) * -1 * self.speed/2 * (abs(round(float(self.x-self.target_x)))+40) / 80.0
+            self.y_change = sin(self.angle) * - 1 * self.speed/2 * (abs(round(float(self.y-self.target_y)))+40) / 80.0
+        else:
+            self.x_change = cos(self.angle) * -1 * self.speed*4 / (abs(round(float(self.x-self.target_x))+1)) * 50.0
+            self.y_change = sin(self.angle) * - 1 * self.speed*4 / (abs(round(float(self.y-self.target_y))+1)) * 50.0
+
+        if self.game.level != self.current_level:
+            self.kill()
+class SmallBlock(Block):
+    def __init__(self, game, x, y, target_pos, speed=2, type=0, oneshot=False, wait_time=0, random_wait=False, image_coords=(2, 3), image_size=(48, 48)) -> None:
+        super().__init__(game, x, y, target_pos, speed, type, oneshot, wait_time, random_wait, image_coords, image_size)
+class MediumBlock(Block):
+    def __init__(self, game, x, y, target_pos, speed=3, type=1, oneshot=False, wait_time=0, random_wait=False, image_coords=(3, 2), image_size=(96, 96)) -> None:
+        super().__init__(game, x, y, target_pos, speed, type, oneshot, wait_time, random_wait, image_coords, image_size)
+class LargeBlock(Block):
+    def __init__(self, game, x, y, target_pos, speed=3, type=0, oneshot=True, wait_time=0, random_wait=False, image_coords=(2, 4), image_size=(144, 144)) -> None:
+        super().__init__(game, x, y, target_pos, speed, type, oneshot, wait_time, random_wait, image_coords, image_size)
 class Rock(Projectile):
     def __init__(self, game, x, y, target_pos, image, speed=2) -> None:
         super().__init__(game, x, y, target_pos, image, speed)
@@ -1123,9 +1197,11 @@ class Bandit(Enemy):
             self.player_x,self.player_y = self.game.player.x,self.game.player.y
             if random.randint(0,1):
                 self.speed = 3
+                SFX.throw_one.play()
                 BanditAttack(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.swipe_image)
             else:
                 self.speed = -3
+                SFX.throw_one.play()
                 BanditAttack(self.game,self.x+32,self.y,(self.game.player.x-10,self.game.player.y-10),self.swipe_image)
             self.last_arrow = pygame.time.get_ticks()
             self.arrow_cooldown = 500
@@ -1176,9 +1252,11 @@ class Sandrider(Enemy):
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.last_arrow = pygame.time.get_ticks()
             self.arrow_cooldown = random.randint(800,5000)
+            SFX.throw_one.play()
             SandAttack(self.game,self.game.player.x,self.game.player.y,self.game.sand_rise,10)
     def rocks(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0):
+            SFX.charge.play()
             Rock(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.rock_image)
             Rock(self.game,self.x-32,self.y,(self.game.player.x,self.game.player.y),self.rock_image) #shoots two arrows towards the player in a triple shot format
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
@@ -1218,6 +1296,42 @@ class Sandrider(Enemy):
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
         ManaOrb(self.game,self.x,self.y)
+
+class Sentry(Enemy):
+    def __init__(self, game, x,y):
+        super().__init__(game, x, y,(4,0),False) #(1,0) is the tilemap coordinate for the Archer
+        self.arrow_cooldown = 10000
+        self.last_arrow = pygame.time.get_ticks() + 2500
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.max_health = 8
+        self.health = self.max_health
+        self.arrow_image = self.game.enemy_spritesheet.get_sprite(48*4,48,18,48)
+        self.shoot_limit = 10
+        self.shoot_count = 0
+    def shoot(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.last_arrow = pygame.time.get_ticks()
+            if self.shoot_count != self.shoot_limit:
+                self.arrow_cooldown = 400
+                self.shoot_count += 1
+            else:
+                self.arrow_cooldown = random.randint(7000,10000)
+                self.shoot_count = 0
+            SFX.laser.play()
+            SFX.laser.fadeout(300)
+            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,9) #shoots three arrows towards the player in a triple shot format
+    
+    def movement(self): #no movement
+        self.shoot()
+    def death_loot(self):
+        self.game.player.experience += 3
+        ManaOrb(self.game,self.x,self.y)
+        ManaOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+
+# Area 3 Enemies
 class WarriorStrike(Projectile):
     def __init__(self, game, x, y, target_pos, image, speed=4, decay=0) -> None:
         super().__init__(game, x, y, target_pos, image, speed)
@@ -1295,42 +1409,6 @@ class Warrior(Enemy):
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
 
-class Sentry(Enemy):
-    def __init__(self, game, x,y):
-        super().__init__(game, x, y,(4,0),False) #(1,0) is the tilemap coordinate for the Archer
-        self.arrow_cooldown = 10000
-        self.last_arrow = pygame.time.get_ticks() + 2500
-        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.max_health = 8
-        self.health = self.max_health
-        self.arrow_image = self.game.enemy_spritesheet.get_sprite(48*4,48,18,48)
-        self.shoot_limit = 10
-        self.shoot_count = 0
-    def shoot(self):
-        if (pygame.time.get_ticks() - self.last_arrow > self.arrow_cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
-            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-            self.last_arrow = pygame.time.get_ticks()
-            if self.shoot_count != self.shoot_limit:
-                self.arrow_cooldown = 400
-                self.shoot_count += 1
-            else:
-                self.arrow_cooldown = random.randint(7000,10000)
-                self.shoot_count = 0
-            SFX.laser.play()
-            SFX.laser.fadeout(300)
-            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,9) #shoots three arrows towards the player in a triple shot format
-    
-    def movement(self): #no movement
-        self.shoot()
-    def death_loot(self):
-        self.game.player.experience += 3
-        ManaOrb(self.game,self.x,self.y)
-        ManaOrb(self.game,self.x,self.y)
-        HealthOrb(self.game,self.x,self.y)
-        HealthOrb(self.game,self.x,self.y)
-
-# Area 3 Enemies
-
 class Apprentice(Enemy):
     pass
 
@@ -1345,9 +1423,10 @@ class Guard(Enemy):
 #BOSSES
 
 class Boss(pygame.sprite.Sprite): #Base class for all bosses (with displaying images, etc.)
-    def __init__(self, game, x=7, y=7, image_coords = (0,0)):
+    def __init__(self, game, image_file, x=7, y=7, image_coords=(0,0),width=(48,48)):
         self.game = game
-        self.health = 25
+        self.max_health = 10
+        self.health = self.max_health
         self.speed = 1.5
 
         self._layer = PLAYER_LAYER #Bottom BG, Enemies, Attacks, UI
@@ -1355,19 +1434,14 @@ class Boss(pygame.sprite.Sprite): #Base class for all bosses (with displaying im
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.x = x * TILESIZE
         self.y = y * TILESIZE
-        self.width = TILESIZE
-        self.height = TILESIZE
-
-        self.image = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48,self.width,self.height)
-        self.weapon = self.game.enemy_spritesheet.get_sprite(image_coords[0]*48,image_coords[1]*48+48,self.width,self.height)
-        self.weapon_angle = 90
-        self.weapon_copy = Image(self.game,self.x+20,self.y,pygame.transform.rotate(self.weapon,self.weapon_angle),PLAYER_LAYER+1)
-        self.original_image = self.image
+        self.width = width[0]
+        self.height = width[1]
+        self.image_file = image_file
+        self.image = image_file.get_sprite(image_coords[0]*self.width,image_coords[1]*self.height,self.width,self.height)
         
-        self.hit_image = self.image.copy()
-        var = pygame.PixelArray(self.hit_image)
-        var.replace(pygame.Color(255,255,255), pygame.Color(255,0,0))
-        del var
+        self.original_image = self.image
+
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
 
         self.x_change = 0 #x_vel
         self.y_change = 0 #y_vel
@@ -1378,7 +1452,9 @@ class Boss(pygame.sprite.Sprite): #Base class for all bosses (with displaying im
         self.last_hit = 0
         self.hit_cooldown = 100
         self.alpha = 255
+        self.can_hit = True
     def update(self):
+        self.animate()
         self.movement()
         self.rect.x += self.x_change
         self.rect.y += self.y_change
@@ -1390,36 +1466,41 @@ class Boss(pygame.sprite.Sprite): #Base class for all bosses (with displaying im
         if self.health < 1:
             self.alpha -= 15
             self.image.set_alpha(self.alpha)
-        if self.alpha < 1:
-            if self.alive():
-                self.game.enemies_remaining -= 1
-                self.game.player.experience += 1
-            self.weapon_copy.kill()
-            ManaOrb(self.game,self.x,self.y)
-            HealthOrb(self.game,self.x,self.y)
-            HealthOrb(self.game,self.x,self.y)
+        if self.alpha < 1 and self.alive():
+            self.death_loot()
+            self.game.enemies_remaining -= 1
+            SFX.enemy_death.play()
             self.kill()
+    def death_loot(self):
+        self.game.player.experience += 1
             
     def movement(self):
         self.chase()
     def collide(self):
         if self.y > (WIN_HEIGHT - TILESIZE):
             self.rect.y = (WIN_HEIGHT - TILESIZE)
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         elif self.y < 0:
             self.rect.y = 0
         if self.x > (WIN_WIDTH - TILESIZE):
             self.rect.x = (WIN_WIDTH-TILESIZE)
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         elif self.x < 1:
             self.rect.x = 0 
         hits = pygame.sprite.spritecollide(self,self.game.attacks, False)
         if hits:
             if pygame.time.get_ticks() - self.last_hit > self.hit_cooldown:
                 self.last_hit = pygame.time.get_ticks()
-        if hits or pygame.time.get_ticks() - self.last_hit <= self.hit_cooldown - 50:
-            self.image = self.hit_image
-        else:
-            self.image = self.original_image
-
+                if self.game.enemy_health_display == None:
+                    self.game.enemy_health_display = EnemyHealthBar(self)
+                else:
+                    self.game.enemy_health_display.enemy = self
+                try:
+                    if self.game.player.mana + 0.05 < self.game.player.max_mana:
+                        self.game.player.mana += 0.05
+                except: pass
+    def animate(self):
+        pass
     def chase(self):
         player_x,player_y = self.game.player.x,self.game.player.y
         # Find direction vector (dx, dy) between enemy and player.
@@ -1429,9 +1510,143 @@ class Boss(pygame.sprite.Sprite): #Base class for all bosses (with displaying im
         dirvect.scale_to_length(self.speed)
         self.x_change, self.y_change = dirvect.x, dirvect.y
 
-class Ninja(Boss):
-    pass
+class Rogue(Boss):
+    def __init__(self, game, x=7, y=7, image_coords=(0, 0), width=(108, 96)):
+        image_file = game.rogue_spritesheet
+        super().__init__(game, image_file, x, y, image_coords, width)
+        self.game = game
+        self.idle_frame = 0
+        self.shadow_frame = 0
+        self.max_health = 100
+        self.health = self.max_health
+        self.can_hit = True
+        self.width = width[0]
+        self.height = width[1]
+        self.cooldown = 800
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2090)
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.arrow_image = self.game.rogue_spritesheet.get_sprite(240,0,48,48)
+        self.can_hurt = True
+        self.speed = 2.5
+        self.is_shadow = False
+    def throw_arrow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 2
+            self.can_hit = True
+            self.image.set_alpha(255)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 1500
+            Projectile(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,3)
+            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,3) #shoots three arrows towards the player in a triple shot format
+            Projectile(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,3)
+    def chase(self):
+        self.roam()
+    def dash(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.can_hit = False
+            self.image.set_alpha(125)
+            if random.randint(0,1):
+                self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            else:
+                self.player_x,self.player_y = self.game.player.x, self.game.player.y
+            self.speed = 3
+            WarriorStrike(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,3)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 200
+    def roam(self):
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+        if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
+            if self.is_shadow == False:
+                if random.randint(0,2):
+                    self.throw_arrow()
+                elif random.randint(0,1):
+                    self.dash()
+                else:
+                    self.shadow()
+            else:
+                if random.randint(0,1):
+                    self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+                else:
+                    self.player_x,self.player_y = self.game.player.x, self.game.player.y
+        if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
+            self.player_x,self.player_y = self.game.player.x, self.game.player.y
+            self.speed = 2.5
+            if self.is_shadow:
+                if self.max_health == 100:
+                    Shadow(self.game,self.x/TILESIZE,self.y/TILESIZE)
+                self.is_shadow = False
+                self.last_arrow = pygame.time.get_ticks() 
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(0,0)
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 0
+        # Move along this normalized vector towards the player at current speed.
+        
+        self.x_change, self.y_change = dirvect.x, dirvect.y    
+    def animate(self):
+        if not self.is_shadow:
+            if self.shadow_frame >= 0.01:
+                self.shadow_frame -= 0.1
+                self.image = self.game.rogue_spritesheet.get_sprite(108*floor(self.shadow_frame),96,self.width,self.height)
+            else:
+                self.shadow_frame = 0
+                self.idle_frame += 0.02
+                self.image = self.game.rogue_spritesheet.get_sprite(108*floor(self.idle_frame),0,self.width,self.height)
+                if self.idle_frame >= 1.98:
+                    self.idle_frame = 0
+        else:
+            self.idle_frame = 0
+            self.shadow_frame += 0.1
+            if self.shadow_frame >= 2.99:
+                self.shadow_frame = 3
+            self.image = self.game.rogue_spritesheet.get_sprite(108*floor(self.shadow_frame),96,self.width,self.height)    
+    def shadow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.idle_frame = 0
+            self.shadow_frame = 0
+            self.is_shadow = True
+            self.can_hit = False
+            self.can_hurt = False
+            self.image.set_alpha(125)
+            self.speed = 3
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 3000
+            
 
+class Shadow(Rogue):
+    def __init__(self, game, x, y, image_coords=(0, 2), width=(108, 96)):
+        super().__init__(game, x, y, image_coords, width)
+        self.can_hit = False
+        self.can_hurt = True
+        self.health = 6
+        self.max_health = 6
+        self.game.enemies_remaining += 1
+    def animate(self):
+        self.alpha -= 0.1
+        self.image.set_alpha(self.alpha)
+        if not self.is_shadow:
+            if self.shadow_frame >= 0.01:
+                self.shadow_frame -= 0.1
+                self.image = self.game.rogue_spritesheet.get_sprite(108*floor(self.shadow_frame),96*3,self.width,self.height)
+            else:
+                self.shadow_frame = 0
+                self.idle_frame += 0.02
+                self.image = self.game.rogue_spritesheet.get_sprite(108*floor(self.idle_frame),96*2,self.width,self.height)
+                if self.idle_frame >= 1.98:
+                    self.idle_frame = 0
+        else:
+            self.idle_frame = 0
+            self.shadow_frame += 0.1
+            if self.shadow_frame >= 2.99:
+                self.shadow_frame = 3
+            self.image = self.game.rogue_spritesheet.get_sprite(108*floor(self.shadow_frame),96*3,self.width,self.height)    
+    def throw_arrow(self):
+        pass
 class Guardian(Boss):
     pass
 

@@ -5,10 +5,10 @@ pygame.mixer.init()
 class Music:
     title_music = pygame.mixer.Sound("Assets/Audio/Music/menu.mp3"); title_music.set_volume(2)
     
-    the_plains = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_plains.mp3"); the_plains.set_volume(0.6)
-    the_desert = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_desert.mp3"); the_desert.set_volume(0.6)
-    the_enchanted_forest = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_enchanted_forest.mp3") ; the_enchanted_forest.set_volume(0.8)
-    the_castle = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_castle.mp3"); the_castle.set_volume(0.7)
+    the_plains = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_plains.mp3"); the_plains.set_volume(0.5)
+    the_desert = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_desert.mp3"); the_desert.set_volume(0.5)
+    the_enchanted_forest = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_enchanted_forest.mp3") ; the_enchanted_forest.set_volume(0.9)
+    the_castle = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_castle.mp3"); the_castle.set_volume(0.8)
 
     area_music = [the_plains,the_desert,the_enchanted_forest,the_castle,title_music] #make sure to have it minus of the other area due to the index!
 
@@ -42,7 +42,7 @@ class SFX: #All the SFX are stored as variables in a class to be played at anyti
     orb_special = pygame.mixer.Sound('Assets/Audio/SFX/Player/Acuity/orb_special.wav'); orb_special.set_volume(0.9)
     
     laser = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/laser.wav'); laser.set_volume(1.2)
-    
+    charge = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/charge.wav'); laser.set_volume(1.6)
     player_hurt = pygame.mixer.Sound('Assets/Audio/SFX/Player/player_hurt.wav'); player_hurt.set_volume(1.2)
     death = pygame.mixer.Sound('Assets/Audio/SFX/Player/death.wav'); death.set_volume(1.5)
     
