@@ -730,7 +730,7 @@ class ManaOrb(pygame.sprite.Sprite): #Mana Orbs that drop when killing an enemy
 ############### Enemy Stuffs
 
 class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can change the image and also the target position!! Easy :)
-    def __init__(self,game,x,y,target_pos,image,speed=4) -> None:
+    def __init__(self,game,x,y,target_pos,image,speed=4,rotate=True) -> None:
         self.x = x
         self.y = y
         self.width = TILESIZE
@@ -752,9 +752,10 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         self.rect.y = self.y
         
         self.current_level = self.game.level
-        self.angle = (180 / pi) * -atan2(self.target_y-self.y, self.target_x-self.x)-90
-        self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
-        self.image = self.arrow_copy
+        if rotate:
+            self.angle = (180 / pi) * -atan2(self.target_y-self.y, self.target_x-self.x)-90
+            self.arrow_copy = pygame.transform.rotate(self.image,self.angle)
+            self.image = self.arrow_copy
         self.animation_frame = 0
         self.has_collided = False
     def update(self):
@@ -1832,22 +1833,130 @@ class Guardian(Boss):
         self.image = self.game.guardian_spritesheet.get_sprite(108*floor(self.idle_frame),0,self.width,self.height)
         if self.idle_frame >= 1.98:
             self.idle_frame = 0  
-    def shadow(self):
-        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
-            self.idle_frame = 0
-            self.shadow_frame = 0
-            self.is_shadow = True
-            self.can_hit = False
-            self.can_hurt = False
-            self.image.set_alpha(125)
-            self.speed = 3
-            self.last_arrow = pygame.time.get_ticks()
-            self.cooldown = 3000
 
-class Wizard(Boss):
-    pass
+class EnemyFire(Projectile):
+    def __init__(self, game, x, y, target_pos, image, speed=2,rotate=False) -> None:
+        super().__init__(game, x, y, target_pos, image, speed,rotate)
+    def custom_update(self):
+        self.x_vel += cos(pygame.time.get_ticks())
+        self.y_vel += sin(pygame.time.get_ticks()) #Decays
+class Sorcerer(Boss):
+    def __init__(self, game, x=7, y=7, image_coords=(0, 0), width=(120, 120)):
+        image_file = game.sorcerer_spritesheet
+        super().__init__(game, image_file, x, y, image_coords, width)
+        self.game = game
+        self.idle_frame = 0
+        self.shadow_frame = 0
+        self.max_health = 250
+        self.health = self.max_health
+        self.can_hit = True
+        self.width = width[0]
+        self.height = width[1]
+        self.cooldown = 800
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2090)
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.arrow_image = self.game.sorcerer_spritesheet.get_sprite(48,120,30,36)
+        self.can_hurt = True
+        self.speed = 2.5
+    def throw_arrow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 3
+            self.can_hit = True
+            self.image.set_alpha(255)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 1000
+            if random.randint(0,1):
+                EnemyFire(self.game,self.x,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image)
+            else:
+                EnemyFire(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
+            SFX.orb_special.play()
+    def chase(self):
+        self.roam()
+    def roam(self):
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+        if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
+            if random.randint(0,2):
+                self.throw_arrow()
+        if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
+            self.player_x,self.player_y = self.game.player.x, self.game.player.y
+            self.speed = 3
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(0,0)
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 0
+        # Move along this normalized vector towards the player at current speed.
+        
+        self.x_change, self.y_change = dirvect.x, dirvect.y    
+    def animate(self):
+        self.idle_frame += 0.02
+        self.image = self.game.sorcerer_spritesheet.get_sprite(120*floor(self.idle_frame),0,self.width,self.height)
+        if self.idle_frame >= 1.98:
+            self.idle_frame = 0  
 
 class Prince(Boss):
+    def __init__(self, game, x=7, y=7, image_coords=(0, 0), width=(120, 114)):
+        image_file = game.prince_spritesheet
+        super().__init__(game, image_file, x, y, image_coords, width)
+        self.game = game
+        self.idle_frame = 0
+        self.shadow_frame = 0
+        self.max_health = 350
+        self.health = self.max_health
+        self.can_hit = True
+        self.width = width[0]
+        self.height = width[1]
+        self.cooldown = 800
+        self.last_arrow = pygame.time.get_ticks() + random.randint(0,2090)
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.arrow_image = self.game.sorcerer_spritesheet.get_sprite(48,120,30,36)
+        self.can_hurt = True
+        self.speed = 2.5
+    def throw_arrow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 3
+            self.can_hit = True
+            self.image.set_alpha(255)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 1000
+            if random.randint(0,1):
+                EnemyFire(self.game,self.x,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image)
+            else:
+                EnemyFire(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
+            SFX.orb_special.play()
+    def chase(self):
+        self.roam()
+    def roam(self):
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+        if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
+            if random.randint(0,2):
+                self.throw_arrow()
+        if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
+            self.player_x,self.player_y = self.game.player.x, self.game.player.y
+            self.speed = 3
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(0,0)
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 0
+        # Move along this normalized vector towards the player at current speed.
+        
+        self.x_change, self.y_change = dirvect.x, dirvect.y    
+    def animate(self):
+        self.idle_frame += 0.02
+        self.image = self.game.prince_spritesheet.get_sprite(120*floor(self.idle_frame),0,self.width,self.height)
+        if self.idle_frame >= 1.98:
+            self.idle_frame = 0 
+
+class Empress(Boss):
     pass
 
 ##############################################################

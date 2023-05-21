@@ -34,6 +34,8 @@ class Game:
 
         self.rogue_spritesheet = Spritesheet("Assets/Entities/Bosses/rogue.png")
         self.guardian_spritesheet = Spritesheet("Assets/Entities/Bosses/guardian.png")
+        self.sorcerer_spritesheet = Spritesheet("Assets/Entities/Bosses/sorcerer.png")
+        self.prince_spritesheet = Spritesheet("Assets/Entities/Bosses/prince.png")
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
@@ -62,16 +64,16 @@ class Game:
             [ #AREA 3 - THE ENCHANTED FOREST
                 [],
                 [lambda:Warrior(self,10,8),lambda:Warrior(self,1,8),lambda:Archer(self,13,1),lambda:Apprentice(self,7,7),lambda:Archer(self,1,13)],
+                [],
                 [lambda:Apprentice(self,8,8),lambda:Apprentice(self,1,7),lambda:Archer(self,13,1),lambda:Warrior(self,13,1),lambda:Warrior(self,1,13)],
-                [lambda:Warrior(self,8,8),lambda:Warrior(self,3,8),lambda:Archer(self,5,1),lambda:Archer(self,13,1),lambda:Archer(self,8,1)],
-                [lambda:Apprentice(self,7,7),lambda:Warrior(self,8,7),lambda:Warrior(self,7,1),lambda:Apprentice(self,9,7),lambda:Apprentice(self,5,7),lambda:Archer(self,4,7)],
+                [lambda: Sorcerer(self,7,7)],
             ],
             [ #AREA 4 - THE CASTLE
                 [],
                 [],
-                [lambda:Thief(self),lambda:Thief(self,4,2)],
-                [lambda:Warrior(self,2,3)],
-                [lambda:Warrior(self,8,8)],
+                [],
+                [],
+                [lambda:Prince(self,7,7)],
             ],
             [ #AREA 5 - THE HEART
                 [],

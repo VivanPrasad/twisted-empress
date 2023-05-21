@@ -14,7 +14,7 @@ class Music:
 
     the_rogue = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_rogue.mp3"); the_rogue.set_volume(0.9)
     the_guardian = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_guardian.mp3"); the_guardian.set_volume(0.9)
-    the_wizard = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_wizard.mp3"); the_wizard.set_volume(0.9)
+    the_wizard = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_sorcerer.mp3"); the_wizard.set_volume(0.9)
     the_prince = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_prince.mp3"); the_prince.set_volume(0.9)
     the_empress = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_empress.mp3"); the_empress.set_volume(0.9)
     boss_music = [the_rogue,the_guardian,the_wizard,the_prince,the_empress]
