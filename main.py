@@ -33,6 +33,7 @@ class Game:
         self.enemy_health_display = None
 
         self.rogue_spritesheet = Spritesheet("Assets/Entities/Bosses/rogue.png")
+        self.guardian_spritesheet = Spritesheet("Assets/Entities/Bosses/guardian.png")
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
@@ -55,15 +56,15 @@ class Game:
                 [],
                 [lambda:Bandit(self,7,7),lambda:Bandit(self,9,1),lambda:Bandit(self,3,7),lambda: LargeBlock(self,1,1,(1,13))],
                 [lambda:Sentry(self,4,4),lambda:Sandrider(self,5,5),lambda:Sentry(self,10,4),lambda:Sentry(self,10,10),lambda:Sentry(self,4,10)],
-                [lambda:Sandrider(self,8,1),lambda:Sentry(self,4,2),lambda:Bandit(self,3,5),lambda:Sandrider(self,10,10),lambda:Sandrider(self,6,1)],
-                [lambda:Sandrider(self,2,1),lambda:Bandit(self,7,7),lambda:Sentry(self,7,2),lambda:Sentry(self,13,2),lambda:Sentry(self,1,13),lambda:Bandit(self,5,10),lambda:Bandit(self,3,5)],
+                [lambda:Sandrider(self,8,1),lambda:Sentry(self,7,7),lambda:Bandit(self,3,5),lambda:Sandrider(self,10,10),lambda:Sandrider(self,6,1)],
+                [lambda:Guardian(self,7,7)],
             ],
             [ #AREA 3 - THE ENCHANTED FOREST
                 [],
-                [lambda:Warrior(self,10,8),lambda:Warrior(self,1,8),lambda:Archer(self,13,1),lambda:Archer(self,13,13)],
-                [lambda:Warrior(self,8,8),lambda:Warrior(self,1,7),lambda:Archer(self,13,1),lambda:Warrior(self,13,1),lambda:Warrior(self,1,13)],
+                [lambda:Warrior(self,10,8),lambda:Warrior(self,1,8),lambda:Archer(self,13,1),lambda:Apprentice(self,7,7),lambda:Archer(self,1,13)],
+                [lambda:Apprentice(self,8,8),lambda:Apprentice(self,1,7),lambda:Archer(self,13,1),lambda:Warrior(self,13,1),lambda:Warrior(self,1,13)],
                 [lambda:Warrior(self,8,8),lambda:Warrior(self,3,8),lambda:Archer(self,5,1),lambda:Archer(self,13,1),lambda:Archer(self,8,1)],
-                [lambda:Warrior(self,8,8),lambda:Thief(self),lambda:Archer(self,3,13)],
+                [lambda:Apprentice(self,7,7),lambda:Warrior(self,8,7),lambda:Warrior(self,7,1),lambda:Apprentice(self,9,7),lambda:Apprentice(self,5,7),lambda:Archer(self,4,7)],
             ],
             [ #AREA 4 - THE CASTLE
                 [],
@@ -109,12 +110,13 @@ class Game:
             if event.type == pygame.QUIT:
                 self.playing = False
                 self.running = False
-        if pygame.mouse.get_pressed()[0]:
-            self.player.basic_attack()
-        elif pygame.mouse.get_pressed()[2]:
-            self.player.special_attack()
-        elif pygame.mouse.get_pressed()[1]: #Right Click
-            pass
+        if not self.player.guarding:
+            if pygame.mouse.get_pressed()[0]:
+                self.player.basic_attack()
+            elif pygame.mouse.get_pressed()[2]:
+                self.player.special_attack()
+            elif pygame.mouse.get_pressed()[1]: #Right Click
+                pass
                     
     def update(self):
         self.all_sprites.update()
