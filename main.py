@@ -36,6 +36,8 @@ class Game:
         self.guardian_spritesheet = Spritesheet("Assets/Entities/Bosses/guardian.png")
         self.sorcerer_spritesheet = Spritesheet("Assets/Entities/Bosses/sorcerer.png")
         self.prince_spritesheet = Spritesheet("Assets/Entities/Bosses/prince.png")
+        self.empress_spritesheet = Spritesheet("Assets/Entities/Bosses/empress.png")
+
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
@@ -80,7 +82,7 @@ class Game:
                 [],
                 [],
                 [],
-                [],
+                [lambda: Empress(self,7,7)],
             ],]
 
         self.new()
