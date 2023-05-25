@@ -208,10 +208,6 @@ class Player(pygame.sprite.Sprite): #The Player
             1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
             2:[]  #Acuity Stat Tree (For pygame project part 2!)
         }
-        self.level_up()
-        self.level_up()
-        self.level_up()
-        self.level_up()
 
     def update(self):
         self.animate()
