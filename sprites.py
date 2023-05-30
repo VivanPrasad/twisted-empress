@@ -204,7 +204,10 @@ class Player(pygame.sprite.Sprite): #The Player
         self.hit_cooldown = 1200
         self.last_hit = 0
         self.times_hit = 0
-
+        for i in range(self.game.level - 1):
+            self.level_up()
+        for i in range(self.game.area - 1):
+            self.level_up()
         self.stat_tree = {
             0:["HP"], #Lionheart Stat Tree (For pygame project part 2!)
             1:[{"learn_skill":0}], #Odyssey Stat Tree (For pygame project part 2!)
@@ -2144,13 +2147,16 @@ class Empress(Boss):
         self.last_arrow = pygame.time.get_ticks() + random.randint(0,2090)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.arrow_image = self.game.sorcerer_spritesheet.get_sprite(48,120,30,36)
+        self.blue_image = self.game.enemy_spritesheet.get_sprite(486,96,30,48)
+        self.yellow_image = self.game.guardian_spritesheet.get_sprite(48,198,28,48)
+        self.pink_image = self.game.sorcerer_spritesheet.get_sprite(48,120,30,36)
         self.can_hurt = True
         self.speed = 4
         self.is_transforming = False
         self.form_values = {"basic":0,"blue":2,"pink":4,"yellow":6,"soul":8,"twisted":10}
         self.form = "basic"
 
-    def throw_arrow(self):
+    def phase_change(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             self.speed = 4
@@ -2160,14 +2166,50 @@ class Empress(Boss):
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = 2000
             SFX.orb_special.play()
+    def phase_attack(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 3
+            self.can_hit = True
+            for i in range(random.randint(1,5)):
+                if self.form == "basic":
+                    pass
+                if self.form == "twisted":
+                    GroundAttack(self.game,self.player_x,self.player_y,self.game.dark_attack,6,48,78,0.05)
+                elif self.form == "pink":
+                    Projectile(self.game,self.x,self.y,(self.player_x,self.player_y),self.pink_image,3)
+                elif self.form == "yellow":
+                    Projectile(self.game,self.x,self.y,(self.player_x,self.player_y),self.yellow_image,4)
+                elif self.form == "blue":
+                    GuardSword(self.game,self.x,self.y,(self.player_x,self.player_y),self.blue_image)
+                self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            if self.form == "blue":
+                self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+                self.speed = 6
+                self.cooldown = 300
+                self.can_hit = False
+                self.image.set_alpha(200)
+                
+            else:
+                self.cooldown = 200
+            self.last_arrow = pygame.time.get_ticks()
+                
     def chase(self):
         self.roam()
     def roam(self):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
-            if random.randint(0,2):
-                self.throw_arrow()
+            if not self.form in ["blue","pink","yellow"]:
+                if random.randint(0,10):
+                    self.phase_attack()
+                else:
+                    self.phase_change()
+            else:
+                if random.randint(0,4):
+                    self.phase_attack()
+                else:
+                    self.phase_change()
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
             self.player_x,self.player_y = self.game.player.x, self.game.player.y
             self.speed = 4

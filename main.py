@@ -28,7 +28,7 @@ class Game:
         
         self.sand_rise = Spritesheet("Assets/Entities/Enemies/Sandrider/sand_rise_animation.png")
         self.ice_attack = Spritesheet("Assets/Entities/Enemies/Magic/ice_animation.png")
-
+        self.dark_attack = Spritesheet("Assets/Entities/Enemies/Magic/dark_animation.png")
         self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
         self.enemy_health_spritesheet = Spritesheet("Assets/UI/enemy_hp.png")
         self.enemy_health_display = None
@@ -69,7 +69,7 @@ class Game:
                 [lambda:Warrior(self,10,8),lambda:Warrior(self,1,8),lambda:Archer(self,13,1),lambda:Apprentice(self,7,7),lambda:Archer(self,1,13)],
                 [],
                 [lambda:Apprentice(self,8,8),lambda:Apprentice(self,1,7),lambda:Archer(self,13,1),lambda:Warrior(self,13,1),lambda:Warrior(self,1,13)],
-                [lambda: Sorcerer(self,7,7)],
+                [lambda:Sorcerer(self,7,7)],
             ],
             [ #AREA 4 - THE CASTLE
                 [],
