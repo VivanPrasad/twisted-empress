@@ -197,9 +197,11 @@ class Player(pygame.sprite.Sprite): #The Player
         
         self.dashing = 1
         self.guarding = False
+        self.guarding_cooldown = 500
+        self.last_guarded = 0
         self.last_special = 0
 
-        self.hit_cooldown =1200
+        self.hit_cooldown = 1200
         self.last_hit = 0
         self.times_hit = 0
 
@@ -267,9 +269,10 @@ class Player(pygame.sprite.Sprite): #The Player
         if keys[pygame.K_SPACE] and not self.guarding:
             self.dash()
         if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT] and not self.dashing:
-            self.guard()
-        else:
-            self.guarding = False
+            if pygame.time.get_ticks() - self.last_guarded > self.guarding_cooldown:
+                self.guard()
+            else:
+                self.guarding = False
         if self.x_change == 0:
             if self.y_change > 0:
                 self.facing = "down"
@@ -293,8 +296,8 @@ class Player(pygame.sprite.Sprite): #The Player
                     self.facing = "up_right"
         
         if self.guarding:
-            self.x_change *= 0.2
-            self.y_change *= 0.2
+            self.x_change = 0
+            self.y_change = 0
         self.rect.x += self.x_change
         self.rect.y += self.y_change
         self.x = self.rect.x
@@ -369,8 +372,12 @@ class Player(pygame.sprite.Sprite): #The Player
     
     def guard(self):
         if self.guarding == False:
-            PlayerGuard(self.game,self.x,self.y)
-            self.guarding = True
+            if self.power == 0 or self.mana - 1 >= 0:
+                SFX.orb_hit.play()
+                if self.power != 0:
+                    self.mana -= 1
+                PlayerGuard(self.game,self.x,self.y)
+                self.guarding = True
         
         
     def basic_attack(self):
@@ -429,16 +436,19 @@ class PlayerGuard(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self, self.groups)
         self.image = self.game.character_spritesheet.get_sprite(240,48,96,96) #shield image
         self.image = pygame.transform.scale(self.image,(120,120))
+        self.spawn_time = pygame.time.get_ticks()
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
         self.image.set_alpha(0)
-        self.alpha = 0
+        self.alpha = 200
     def update(self):
-        if self.alpha < 220 and self.game.player.guarding:
-            self.image.set_alpha(self.alpha)
-            self.alpha += 10
+        if pygame.time.get_ticks() - self.spawn_time > 500:
+            self.alpha -= 10
+        if self.alpha < 10:
+            self.game.player.guarding = False    
         if not self.game.player.guarding:
+            self.game.player.last_guarded = pygame.time.get_ticks()
             self.kill()
         self.rect.x = self.game.player.x - 36
         self.rect.y = self.game.player.y - 36
@@ -446,6 +456,7 @@ class PlayerGuard(pygame.sprite.Sprite):
         self.y = self.rect.y 
         if self.game.player.mana < self.game.player.max_mana-0.005:
             self.game.player.mana += 0.005
+        self.image.set_alpha(self.alpha)
 
 ############################# PLAYER ATTACKS
 class BasicAttack(pygame.sprite.Sprite):
@@ -798,7 +809,7 @@ class Projectile(pygame.sprite.Sprite): #Simple projectiles for enemies! You can
         pass
 
 class GroundAttack(pygame.sprite.Sprite):
-    def __init__(self,game,x,y,spritesheet,frames,rect_x=TILESIZE,rect_y=TILESIZE,time = 0.1) -> None:
+    def __init__(self,game,x,y,spritesheet,frames,rect_x=TILESIZE,rect_y=TILESIZE,time = 0.1,linger=0) -> None:
         self.x = x
         self.y = y
         self.game = game
@@ -821,6 +832,7 @@ class GroundAttack(pygame.sprite.Sprite):
         self.can_hurt = False
         self.animation_frame = 0
 
+        self.linger = linger #fade amount (14 max)
         self.has_collided = False
     def update(self):
         self.custom_update()
@@ -835,10 +847,10 @@ class GroundAttack(pygame.sprite.Sprite):
         
         if self.animation_frame > self.frames / 1.2:
             self.can_hurt = True
-            self.alpha -= 15
+            self.alpha -= 15 - self.linger
         if self.animation_frame < self.frames:
             self.animation_frame += self.time
-        else:
+        elif self.alpha < 20:
             self.kill()
     def collide(self):
         hits = pygame.sprite.spritecollide(self,self.game.players,False)
@@ -1524,8 +1536,107 @@ class Apprentice(Enemy):
 class Angel(Enemy):
     pass
 
+class GuardSword(Projectile):
+    def __init__(self, game, x, y, target_pos, image, speed=4, rotate=True) -> None:
+        super().__init__(game, x, y, target_pos, image, speed, rotate)
+        self.angle += random.randrange(1,50)
+        self.x_vel = 0
+        self.y_vel = 0
+        self.a_vel = 9
+        self.image_copy = self.image
+    def custom_update(self):
+        if abs(self.angle - (atan2(self.y-self.target_y,self.x-self.target_x))) < 2 or (self.a_vel < 0.4 and self.a_vel != 0):
+            if abs(self.angle - (atan2(self.y-self.target_y,self.x-self.target_x))) < 2:
+                self.x_vel = cos(self.angle)
+                self.y_vel = sin(self.angle)
+            self.angle = atan2(self.y-self.target_y,self.x-self.target_x)
+            self.a_vel = 0
+        self.angle += self.a_vel
+        self.a_vel *= 0.95
+        self.image = pygame.transform.rotate(self.image_copy,self.angle)
+        if self.game.player.power != 0:
+            self.x_vel *= 1.1
+            self.y_vel *= 1.1
+class IceAttack(GroundAttack):
+    def __init__(self, game, x, y, spritesheet, frames, time=0.05,linger=13) -> None:
+        super().__init__(game, x, y, spritesheet, frames, 48, 96, time,linger)
 class Guard(Enemy):
-    pass
+    def __init__(self, game, x,y):
+        super().__init__(game, x, y,(10,0),False)
+        self.cooldown = 800
+        self.last_arrow = pygame.time.get_ticks()
+        self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+        self.max_health = 40
+        self.health = self.max_health
+        self.sword_image = self.game.enemy_spritesheet.get_sprite(486,96,30,48)
+        self.speed = 2.5
+    def throw_arrow(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 2
+            self.can_hit = True
+            self.image.set_alpha(255)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = random.randrange(500,3000)
+            SFX.orb_throw.play()
+            GuardSword(self.game,self.x+random.randint(-48,48),self.y+random.randint(-48,48),(self.game.player.x,self.game.player.y),self.sword_image)
+            GuardSword(self.game,self.x+random.randint(-48,48),self.y+random.randint(-48,48),(self.game.player.x+32,self.game.player.y+32),self.sword_image) 
+            GuardSword(self.game,self.x+random.randint(-48,48),self.y+random.randint(-48,48),(self.game.player.x-32,self.game.player.y-32),self.sword_image) 
+    def chase(self):
+        self.roam()
+    def dash(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.player_x, self.player_y = self.game.player.x,self.game.player.y
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 400
+            IceAttack(self.game,self.x,self.y,self.game.ice_attack,8)
+            self.speed = 7
+    def ice_circle(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            for i in range(8):
+                IceAttack(self.game,self.x+cos(i*10)*96,self.y+sin(i*10)*96,self.game.ice_attack,8)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 1000
+            self.speed = 0
+    def ice_line(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            for i in range(8):
+                IceAttack(self.game,self.game.player.x+cos(i*10)*96,self.game.player.y+sin(i*10)*96,self.game.ice_attack,8)
+            self.last_arrow = pygame.time.get_ticks()
+            self.cooldown = 1000
+            self.speed = 0
+    def roam(self):
+        # Find direction vector (dx, dy) between enemy and player.
+        dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
+        if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
+            if random.randint(0,1):
+                self.throw_arrow()
+            elif random.randint(0,1):
+                self.ice_circle()
+            elif random.randint(0,1):
+                self.ice_line()
+            else:
+                self.dash()
+        if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
+            self.player_x,self.player_y = self.game.player.x, self.game.player.y
+            self.speed = 2.5
+        if dirvect.x != 0 and dirvect.y != 0:
+            dirvect.normalize()
+            dirvect.scale_to_length(self.speed)
+        else:
+            dirvect = pygame.math.Vector2(0,0)
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 0
+        # Move along this normalized vector towards the player at current speed.
+        
+        self.x_change, self.y_change = dirvect.x, dirvect.y
+    def death_loot(self):
+        self.game.player.experience += 2
+        SFX.enemy_death.play()
+        ManaOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
+        HealthOrb(self.game,self.x,self.y)
 
 #BOSSES
 
@@ -1778,6 +1889,7 @@ class Shadow(Rogue):
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
+
 class Guardian(Boss):
     def __init__(self, game, x=7, y=7, image_coords=(0, 0), width=(108, 96)):
         image_file = game.guardian_spritesheet
@@ -1896,8 +2008,8 @@ class EnemyFire(Projectile):
     def __init__(self, game, x, y, target_pos, image, speed=2,rotate=False) -> None:
         super().__init__(game, x, y, target_pos, image, speed,rotate)
     def custom_update(self):
-        self.x_vel += cos(pygame.time.get_ticks())
-        self.y_vel += sin(pygame.time.get_ticks()) #Decays
+        self.x_vel += cos(pygame.time.get_ticks()) /2
+        self.y_vel += sin(pygame.time.get_ticks()) /2 #Decays
 
 class Sorcerer(Boss):
     def __init__(self, game, x=7, y=7, image_coords=(0, 0), width=(120, 120)):
@@ -1972,7 +2084,7 @@ class Prince(Boss):
         self.cooldown = 800
         self.last_arrow = pygame.time.get_ticks() + random.randint(0,2090)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
-        self.arrow_image = self.game.sorcerer_spritesheet.get_sprite(48,120,30,36)
+        self.sword_image = self.game.enemy_spritesheet.get_sprite(486,96,30,48)
         self.can_hurt = True
         self.speed = 2.5
     def throw_arrow(self):
@@ -1982,12 +2094,12 @@ class Prince(Boss):
             self.can_hit = True
             self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
-            self.cooldown = 1000
-            if random.randint(0,1):
-                EnemyFire(self.game,self.x,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image)
-            else:
-                EnemyFire(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
-            SFX.orb_special.play()
+            self.cooldown = random.randrange(100,2000)
+            GuardSword(self.game,self.x+random.randint(-48,48),self.y+random.randint(-48,48),(self.game.player.x,self.game.player.y),self.sword_image)
+            GuardSword(self.game,self.x+random.randint(-48,48),self.y+random.randint(-48,48),(self.game.player.x+32,self.game.player.y+32),self.sword_image) 
+            GuardSword(self.game,self.x+random.randint(-48,48),self.y+random.randint(-48,48),(self.game.player.x-32,self.game.player.y-32),self.sword_image) 
+            GuardSword(self.game,self.x+random.randint(-96,96),self.y+random.randint(-96,96),(self.game.player.x-32,self.game.player.y-32),self.sword_image)
+            GuardSword(self.game,self.x+random.randint(-96,96),self.y+random.randint(-96,96),(self.game.player.x-32,self.game.player.y-32),self.sword_image)
     def chase(self):
         self.roam()
     def roam(self):
@@ -2005,6 +2117,7 @@ class Prince(Boss):
         else:
             dirvect = pygame.math.Vector2(0,0)
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            GuardSword(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),(self.game.player.x,self.game.player.y),self.sword_image)
             self.speed = 0
         # Move along this normalized vector towards the player at current speed.
         

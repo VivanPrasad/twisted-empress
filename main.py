@@ -27,6 +27,7 @@ class Game:
         self.profile_spritesheet = Spritesheet("Assets/UI/profile.png") #Spritesheet all UI related things for the player! (HP, MP, XP, Spells)
         
         self.sand_rise = Spritesheet("Assets/Entities/Enemies/Sandrider/sand_rise_animation.png")
+        self.ice_attack = Spritesheet("Assets/Entities/Enemies/Magic/ice_animation.png")
 
         self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
         self.enemy_health_spritesheet = Spritesheet("Assets/UI/enemy_hp.png")
@@ -72,9 +73,9 @@ class Game:
             ],
             [ #AREA 4 - THE CASTLE
                 [],
-                [],
-                [],
-                [],
+                [lambda:Guard(self,8,8)],
+                [lambda:Guard(self,10,8),lambda:Guard(self,5,8)],
+                [lambda:Guard(self,8,8),lambda:Guard(self,13,8),lambda:Guard(self,9,8)],
                 [lambda:Prince(self,7,7)],
             ],
             [ #AREA 5 - THE HEART
