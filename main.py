@@ -29,6 +29,7 @@ class Game:
         self.sand_rise = Spritesheet("Assets/Entities/Enemies/Sandrider/sand_rise_animation.png")
         self.ice_attack = Spritesheet("Assets/Entities/Enemies/Magic/ice_animation.png")
         self.dark_attack = Spritesheet("Assets/Entities/Enemies/Magic/dark_animation.png")
+        self.lightning_attack = Spritesheet("Assets/Entities/Enemies/Magic/lightning_animation.png")
         self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
         self.enemy_health_spritesheet = Spritesheet("Assets/UI/enemy_hp.png")
         self.enemy_health_display = None
@@ -42,8 +43,8 @@ class Game:
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
-        self.level = 1
-        self.area = 1
+        self.level = 4
+        self.area = 2
         self.level_cleared = True
         self.player_power = 0
         self.enemies_remaining = 0
