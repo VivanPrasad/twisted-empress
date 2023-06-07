@@ -61,7 +61,7 @@ The castle is the scariest part of the game. The enemies are insanely challengin
 ### The Heart
 Immediately after The Prince battle, is two rooms of complete white. Complete. White. This is extremely jarring considering the darker themes for ALL of the levels. The Empress knows that everything has been vanquished, and that you are the cause. In a beautiful, poetic way, the final boss encounter with the Twisted Empress depicts that the Empress is not-so-twisted at all. In these times, it is easy to blame the people of power. So then, are you the villain? The final boss fight flips the morals of the fights, now showing the *true colours* of the kingdom. With all three powers, the Empress uses attacks from all previous bosses. This is an almagamation that truly takes the form of a good final boss.
 
-# Bosses (Coming Soon!)
+# Bosses
 
 Currently, the bosses have not been implemented as they will be highly complex to defeat with attack patterns and desperation moves that require memory or reflex skills, with limited attack windows.
 
