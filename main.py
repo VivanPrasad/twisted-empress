@@ -43,8 +43,8 @@ class Game:
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         self.intro_background = pygame.image.load("Assets/map.png").convert()
         self.intro_background.set_alpha(3)
-        self.level = 4
-        self.area = 2
+        self.level = 1
+        self.area = 1
         self.level_cleared = True
         self.player_power = 0
         self.enemies_remaining = 0
