@@ -45,6 +45,7 @@ class Game:
         self.intro_background.set_alpha(3)
         self.level = 1
         self.area = 1
+
         self.level_cleared = True
         self.player_power = 0
         self.enemies_remaining = 0
@@ -259,17 +260,25 @@ class Game:
             self.game_complete()
             self.playing = False
             return
-
-        if self.level == 5:
-            for song in Music.boss_music:
-                song.fadeout(2000)
-            self.area += 1
-            Music.area_music[self.area-1].play(-1,0,5000)
-        
-        if self.level == 4:
+        if self.area == 3 and self.level == 2:
             for song in Music.area_music:
                 song.fadeout(2000)
-            Music.boss_music[self.area-1].play(-1,0,5000)
+            Music.the_haunter.play(-1,0,5000)
+        else:
+            if self.area == 3 and self.level == 3:
+                Music.the_haunter.fadeout(2000)
+                Music.area_music[self.area-1].play(-1,0,5000)
+                
+            if self.level == 5:
+                for song in Music.boss_music:
+                    song.fadeout(2000)
+                self.area += 1
+                Music.area_music[self.area-1].play(-1,0,5000)
+            
+            if self.level == 4:
+                for song in Music.area_music:
+                    song.fadeout(2000)
+                Music.boss_music[self.area-1].play(-1,0,5000)
         
         if self.level < 5:
             self.level += 1
