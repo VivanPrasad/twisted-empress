@@ -309,8 +309,8 @@ class Game:
         title_rect = title.get_rect(x=WIN_WIDTH/2-160,y=WIN_HEIGHT/2-170)
         play_button = Button(WIN_WIDTH/2-50,WIN_HEIGHT/2-50,100,50,WHITE,BLACK,'Play',32)
 
-        version = self.font.render('v0.0.1', True, WHITE,BLACK)
-        version_rect = version.get_rect(x=WIN_WIDTH-90,y=WIN_HEIGHT-50)
+        version = self.font.render('Version I', True, WHITE,BLACK)
+        version_rect = version.get_rect(x=WIN_WIDTH-150,y=WIN_HEIGHT-50)
 
         main_menu = True
         while main_menu == True:
