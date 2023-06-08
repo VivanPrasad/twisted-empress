@@ -1991,16 +1991,17 @@ class Guardian(Boss):
             if self.health > 150:
                 self.cooldown = 2000
             elif self.health > 100:
-                self.cooldown = 1200
+                self.cooldown = 1300
             elif self.health > 50: 
-                self.cooldown = 800
+                self.cooldown = 1000
             else:
-                self.cooldown = 500
+                self.cooldown = 900
             if random.randint(0,1):
                 Projectile(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,5)
             else:
                 Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,5) #shoots three arrows towards the player in a triple shot format
             SFX.laser.play()
+            self.attack_count += 1
     def chase(self):
         self.roam()
     def blocks(self):
@@ -2025,6 +2026,7 @@ class Guardian(Boss):
                         LargeBlock(self.game,lane_x,0,(lane_x,14),2,1)
                     else:
                         LargeBlock(self.game,lane_x,14,(lane_x,0),2,1)
+
             SFX.charge.play()
             self.last_arrow = pygame.time.get_ticks()
             if self.health > 50:
@@ -2033,21 +2035,24 @@ class Guardian(Boss):
                 self.cooldown = 1200
     def honing_lightning(self,mega=False): #Hones towards the player
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.player_x,self.player_y = 7*TILESIZE,7*TILESIZE
             if mega:
                 HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.03,0,3,mega)
             else:
                 HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.04,0,10,mega)
             self.last_arrow = pygame.time.get_ticks()
-            self.cooldown = random.randint(1000,2000)
+            self.cooldown = 1500
     def random_lightning(self,mega = False):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+            self.speed = 2
             if not mega:
                 if self.health > 100:
-                    amount = 6 #amount of attacks
+                    amount = 4 #amount of attacks
                 elif self.health > 50:
-                    amount = 8
+                    amount = 7
                 else:
-                    amount = 10
+                    amount = 12
                 for i in range(amount):
                     EnemyLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.05,mega)
             else:
@@ -2058,7 +2063,7 @@ class Guardian(Boss):
             
             self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
-            self.cooldown = random.randint(500,2000)
+            self.cooldown = random.randint(1000,1500)
     def rocks(self):
         pass
     def roam(self):
@@ -2066,14 +2071,27 @@ class Guardian(Boss):
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
             if self.visible:
-                if not random.randint(0,2):
-                    if self.game.player.power != 0:
-                            self.throw_arrow()
-                elif random.randint(0,2):
-                    self.random_lightning(False)
-                elif random.randint(0,2):
-                    if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0) and self.health < 100:
+                if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
+                    self.attack_count += 1
+                if self.attack_count < 30:
+                    if not random.randint(0,2):
+                        if self.game.player.power != 0:
+                                self.throw_arrow()
+                    elif random.randint(0,2):
+                        self.random_lightning(False)
+                        
+                elif self.attack_count >= 30:
+                    self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
+                    self.cooldown = 10000
+                    if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
+                        self.attack_count = 0
+                        self.cooldown = 800
+                        self.last_arrow = pygame.time.get_ticks()
                         self.player_x,self.player_y = 7*TILESIZE, 7*TILESIZE
+                if random.randint(0,2):
+                    if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0) and self.health < 100 and self.attack_count < 30:
+                        self.player_x,self.player_y = 7*TILESIZE, 7*TILESIZE
+                        self.attack_count = 0
                         self.visible = False
                         self.can_hit = False
                         self.can_hurt = False
@@ -2088,7 +2106,7 @@ class Guardian(Boss):
             else:
                 if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
                     self.attack_count += 1
-                if self.attack_count < 5:
+                if self.attack_count < 7:
                     if random.randint(0,1):
                         self.blocks()
                     elif random.randint(0,1):
@@ -2103,6 +2121,7 @@ class Guardian(Boss):
                         self.visible = True
                         self.can_hurt = True
                         self.can_hit = True
+                        self.attack_count = 0
                         SFX.disappear.play()
                         self.cooldown = 4000
                         self.last_arrow = pygame.time.get_ticks()
