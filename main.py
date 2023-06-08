@@ -57,13 +57,12 @@ class Game:
                 [lambda:Thief(self,4,2),lambda:Thief(self,10,2),lambda:Archer(self,2,2)], #Level 1-3
                 [lambda:Thief(self,3,4),lambda:Thief(self,4,4),lambda:Archer(self,1,1),lambda:Archer(self,8,1),lambda:Thief(self,10,4)], #Level 1-4
                 [lambda:Rogue(self,7,7)],
-                [lambda: Thief(self,7,5),lambda: Thief(self,4,7),lambda:Thief(self,12,7),lambda: Archer(self,12,2),lambda: Archer(self,1,2),lambda: Archer(self,13,2),lambda: Thief(self,13,2)]
             ], #Boss Level 1-5
             [ #AREA 2 - THE DESERT
                 [],
                 [lambda:Bandit(self,7,7),lambda:Bandit(self,9,1),lambda:Bandit(self,3,7),lambda: LargeBlock(self,1,1,(1,13))],
                 [lambda:Sentry(self,4,4),lambda:Sandrider(self,5,5),lambda:Sentry(self,10,4),lambda:Sentry(self,10,10),lambda:Sentry(self,4,10)],
-                [lambda:Sandrider(self,8,1),lambda:Sentry(self,7,7),lambda:Bandit(self,3,5),lambda:Sandrider(self,10,10),lambda:Sandrider(self,6,1)],
+                [lambda:Sandrider(self,8,1),lambda:Sentry(self,7,7),lambda:Bandit(self,3,5),lambda:Sandrider(self,10,10),lambda:Sandrider(self,6,1),lambda:Sentry(self,4,1)],
                 [lambda:Guardian(self,7,7)],
             ],
             [ #AREA 3 - THE ENCHANTED FOREST

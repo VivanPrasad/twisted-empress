@@ -1229,7 +1229,8 @@ class BanditAttack(Projectile):
         self.alpha = 255
     def custom_update(self):
         if self.game.player.power == 0:
-            self.alpha -= 5
+            self.alpha -= 1
+            self.speed = 3
             self.image.set_alpha(self.alpha)
             if self.alpha < 1:
                 self.kill()
@@ -1285,7 +1286,7 @@ class Bandit(Enemy):
         
         self.x_change, self.y_change = dirvect.x, dirvect.y
     def death_loot(self):
-        self.game.player.experience += 2
+        self.game.player.experience += 1
         SFX.enemy_death.play()
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
@@ -1348,7 +1349,7 @@ class Sandrider(Enemy):
         
         self.x_change, self.y_change = dirvect.x, dirvect.y
     def death_loot(self):
-        self.game.player.experience += 3
+        self.game.player.experience += 2
         SFX.enemy_death.play()
         HealthOrb(self.game,self.x,self.y)
         HealthOrb(self.game,self.x,self.y)
@@ -1359,7 +1360,7 @@ class Sentry(Enemy):
     def __init__(self, game, x,y):
         super().__init__(game, x, y,(4,0),False) #(1,0) is the tilemap coordinate for the Archer
         self.arrow_cooldown = 10000
-        self.last_arrow = pygame.time.get_ticks() + 2500
+        self.last_arrow = pygame.time.get_ticks() + random.randint(1000,5000)
         self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
         self.max_health = 8
         self.health = self.max_health
@@ -1374,7 +1375,7 @@ class Sentry(Enemy):
                 self.arrow_cooldown = 400
                 self.shoot_count += 1
             else:
-                self.arrow_cooldown = random.randint(7000,10000)
+                self.arrow_cooldown = random.randint(5000,10000)
                 self.shoot_count = 0
             SFX.laser.play()
             SFX.laser.fadeout(300)
@@ -1930,11 +1931,17 @@ class Shadow(Rogue):
         HealthOrb(self.game,self.x,self.y)
 
 class EnemyLightning(GroundAttack):
-    def __init__(self, game, x, y, spritesheet, frames, time=0.09,mega=False) -> None:
-        super().__init__(game, x, y, spritesheet, frames, 48, 96, time,0,mega)
+    def __init__(self, game, x, y, spritesheet, frames, time=0.06,mega=False) -> None:
+        if mega:
+            super().__init__(game, x, y, spritesheet, frames, 48, 96, 0.05,0,mega)
+        else:
+            super().__init__(game, x, y, spritesheet, frames, 48, 96, time,0,mega)
 class HoningLightning(EnemyLightning):
-    def __init__(self, game, x, y, spritesheet, frames, time=1.1,count=0,count_limit=10,mega=False) -> None:
-        super().__init__(game, x, y, spritesheet, frames, time,mega)
+    def __init__(self, game, x, y, spritesheet, frames, time=0.06,count=0,count_limit=10,mega=False) -> None:
+        if mega:
+            super().__init__(game, x, y, spritesheet, frames, 0.05,mega)
+        else:
+            super().__init__(game, x, y, spritesheet, frames, time,mega)
         SFX.lightning_attack.play()
         self.has_repeated = False
         self.count = count
@@ -1949,8 +1956,8 @@ class HoningLightning(EnemyLightning):
                 self.has_repeated = True
         else:
             if self.animation_frame > 2 and not self.has_repeated and self.count != self.count_limit:
-                self.dx = cos(self.angle) * -100 #moves it closer to the player
-                self.dy = sin(self.angle) * -100
+                self.dx = cos(self.angle) * -96 #moves it closer to the player
+                self.dy = sin(self.angle) * -96
                 HoningLightning(self.game, self.x + self.dx,self.y + self.dy,self.spritesheet,self.frames,self.time,self.count+1,self.count_limit,self.mega)
                 self.has_repeated = True
 class Guardian(Boss):
@@ -1982,13 +1989,13 @@ class Guardian(Boss):
             self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
             if self.health > 150:
-                self.cooldown = 750
+                self.cooldown = 2000
             elif self.health > 100:
-                self.cooldown = 600
+                self.cooldown = 1200
             elif self.health > 50: 
-                self.cooldown = 300
+                self.cooldown = 800
             else:
-                self.cooldown = 100
+                self.cooldown = 500
             if random.randint(0,1):
                 Projectile(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,5)
             else:
@@ -2005,7 +2012,7 @@ class Guardian(Boss):
             else:
                 self.player_x,self.player_y = self.game.player.x, self.game.player.y
             self.speed = 0
-            for i in range(random.randint(2,5)):
+            for i in range(random.randint(3,5)):
                 if random.randint(0,1): #Left/Right
                     lane_y = random.randint(0,4)*3
                     if random.randint(0,1):
@@ -2020,34 +2027,32 @@ class Guardian(Boss):
                         LargeBlock(self.game,lane_x,14,(lane_x,0),2,1)
             SFX.charge.play()
             self.last_arrow = pygame.time.get_ticks()
-            if self.health > 100:
-                self.cooldown = 1500
-            elif self.health > 50:
-                self.cooldown = 1200
+            if self.health > 50:
+                self.cooldown = 2000
             else:
-                self.cooldown = 900
+                self.cooldown = 1200
     def honing_lightning(self,mega=False): #Hones towards the player
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
             if mega:
-                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.06,0,10,mega)
+                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.04,0,3,mega)
             else:
-                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.06,0,10,mega)
+                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.05,0,10,mega)
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = random.randint(1000,2000)
     def random_lightning(self,mega = False):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
             if not mega:
                 if self.health > 100:
-                    amount = 5 #amount of attacks
+                    amount = 6 #amount of attacks
                 elif self.health > 50:
                     amount = 8
                 else:
-                    amount = 14
+                    amount = 10
             else:
-                amount = 4
+                amount = 8
             SFX.lightning_attack.play()
             for i in range(amount):
-                    EnemyLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.06,mega)
+                    EnemyLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.03,mega)
             self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = random.randint(500,2000)
@@ -2058,9 +2063,9 @@ class Guardian(Boss):
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
             if self.visible:
-                if random.randint(0,2):
+                if not random.randint(0,2):
                     if self.game.player.power != 0:
-                        self.throw_arrow()
+                            self.throw_arrow()
                 elif random.randint(0,2):
                     self.random_lightning(False)
                 elif random.randint(0,2):
@@ -2080,7 +2085,7 @@ class Guardian(Boss):
             else:
                 if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
                     self.attack_count += 1
-                if self.attack_count < 10:
+                if self.attack_count < 5:
                     if random.randint(0,1):
                         self.blocks()
                     elif random.randint(0,1):
@@ -2096,7 +2101,7 @@ class Guardian(Boss):
                         self.can_hurt = True
                         self.can_hit = True
                         SFX.disappear.play()
-                        self.cooldown = 2000
+                        self.cooldown = 4000
                         self.last_arrow = pygame.time.get_ticks()
                 
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
