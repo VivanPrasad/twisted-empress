@@ -858,7 +858,7 @@ class GroundAttack(pygame.sprite.Sprite):
         if self.animation_frame > self.frames / 2:
             self.alpha -= 15 - self.linger
         
-        if self.animation_frame > self.frames / 2 and self.animation_frame < self.frames / 1.5:
+        if self.animation_frame > self.frames / 3 and self.animation_frame < self.frames / 1.5:
             self.can_hurt = True
         else:
             self.can_hurt = False
@@ -1931,11 +1931,11 @@ class Shadow(Rogue):
         HealthOrb(self.game,self.x,self.y)
 
 class EnemyLightning(GroundAttack):
-    def __init__(self, game, x, y, spritesheet, frames, time=0.06,mega=False) -> None:
+    def __init__(self, game, x, y, spritesheet, frames, time=0.04,mega=False) -> None:
         if mega:
-            super().__init__(game, x, y, spritesheet, frames, 48, 96, 0.05,0,mega)
+            super().__init__(game, x, y, spritesheet, frames, 48, 96, 0.05,5,mega)
         else:
-            super().__init__(game, x, y, spritesheet, frames, 48, 96, time,0,mega)
+            super().__init__(game, x, y, spritesheet, frames, 48, 96, time,10,mega)
 class HoningLightning(EnemyLightning):
     def __init__(self, game, x, y, spritesheet, frames, time=0.06,count=0,count_limit=10,mega=False) -> None:
         if mega:
@@ -2034,9 +2034,9 @@ class Guardian(Boss):
     def honing_lightning(self,mega=False): #Hones towards the player
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
             if mega:
-                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.04,0,3,mega)
+                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.03,0,3,mega)
             else:
-                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.05,0,10,mega)
+                HoningLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.04,0,10,mega)
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = random.randint(1000,2000)
     def random_lightning(self,mega = False):
@@ -2048,11 +2048,14 @@ class Guardian(Boss):
                     amount = 8
                 else:
                     amount = 10
+                for i in range(amount):
+                    EnemyLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.05,mega)
             else:
                 amount = 8
-            SFX.lightning_attack.play()
-            for i in range(amount):
+                for i in range(amount):
                     EnemyLightning(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),self.game.lightning_attack,6,0.03,mega)
+            SFX.lightning_attack.play()
+            
             self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = random.randint(500,2000)
