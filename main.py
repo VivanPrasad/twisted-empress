@@ -29,6 +29,8 @@ class Game:
         self.sand_rise = Spritesheet("Assets/Entities/Enemies/Sandrider/sand_rise_animation.png")
         self.ice_attack = Spritesheet("Assets/Entities/Enemies/Magic/ice_animation.png")
         self.dark_attack = Spritesheet("Assets/Entities/Enemies/Magic/dark_animation.png")
+        self.hex_attack = Spritesheet("Assets/Entities/Enemies/Magic/hex_animation.png")
+        self.hex2_attack = Spritesheet("Assets/Entities/Enemies/Magic/hex_attack_animation.png")
         self.lightning_attack = Spritesheet("Assets/Entities/Enemies/Magic/lightning_animation.png")
         self.enemy_spritesheet = Spritesheet("Assets/Entities/enemies.png")
         self.enemy_health_spritesheet = Spritesheet("Assets/UI/enemy_hp.png")

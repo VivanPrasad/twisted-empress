@@ -858,7 +858,7 @@ class GroundAttack(pygame.sprite.Sprite):
         if self.animation_frame > self.frames / 2:
             self.alpha -= 15 - self.linger
         
-        if self.animation_frame > self.frames / 3 and self.animation_frame < self.frames / 1.5:
+        if self.animation_frame > self.frames / 3 and self.animation_frame < self.frames / 1.5 and self.linger != 15:
             self.can_hurt = True
         else:
             self.can_hurt = False
@@ -2132,12 +2132,50 @@ class Guardian(Boss):
         if self.idle_frame >= 1.98:
             self.idle_frame = 0  
 
-class EnemyFire(Projectile):
-    def __init__(self, game, x, y, target_pos, image, speed=2,rotate=False) -> None:
-        super().__init__(game, x, y, target_pos, image, speed,rotate)
+class Hex(GroundAttack):
+    def __init__(self, game, x, y, spritesheet, frames, rect_x=32*6, rect_y=24*6, time=0.05, linger=15, mega=False) -> None:
+        super().__init__(game, x, y, spritesheet, frames, rect_x, rect_y, time, linger, mega)
+        self.dx = 0
+        self.dy = 0
+        self.angle = 90
+        self.timer = 0
     def custom_update(self):
-        self.x_vel += cos(pygame.time.get_ticks()) /2
-        self.y_vel += sin(pygame.time.get_ticks()) /2 #Decays
+        if floor(self.timer) != 4:
+            self.timer += 0.01
+            self.x -= self.dx
+            self.y -= self.dy
+            self.rect.x = self.x
+            self.rect.y = self.y
+            self.angle = atan2(self.y-self.game.player.y+48,self.x-self.game.player.x+48)
+            self.dx = cos(self.angle) * 3
+            self.dy = sin(self.angle) * 3
+        else:
+            self.kill()
+            HexAttack(self.game,self.x,self.y,self.game.hex2_attack,5)
+        if self.animation_frame >= 2.9:
+            self.animation_frame = 0
+            
+class HexAttack(Hex):
+    def __init__(self, game, x, y, spritesheet, frames, rect_x=32 * 6, rect_y=24 * 6, time=0.05, linger=5, mega=False) -> None:
+        super().__init__(game, x, y, spritesheet, frames, rect_x, rect_y, time, linger, mega)
+    def custom_update(self):
+        pass
+class EnemyFire(Projectile):
+    def __init__(self, game, x, y, target_pos, image, speed=2,rotate=False,clockwise=True,type =0) -> None:
+        super().__init__(game, x, y, target_pos, image, speed,rotate)
+        self.clockwise = clockwise
+        self.type = type #0: constant, 1: exponential out, 2: exponential slowdown
+        self.x_vel /= 1.5
+        self.y_vel /= 1.5
+    def custom_update(self):
+        if self.clockwise:
+            self.x_vel -= cos(90+self.angle)/100
+            self.y_vel -= sin(90+self.angle)/100
+        else:
+            self.x_vel += cos(90+self.angle)/100
+            self.y_vel += sin(90+self.angle)/100
+        self.x_vel /= 1.005
+        self.y_vel /= 1.005
 
 class Sorcerer(Boss):
     def __init__(self, game, x=7, y=7, image_coords=(0, 0), width=(120, 120)):
@@ -2157,6 +2195,8 @@ class Sorcerer(Boss):
         self.arrow_image = self.game.sorcerer_spritesheet.get_sprite(48,120,30,36)
         self.can_hurt = True
         self.speed = 2.5
+
+        self.attack_count = 0
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
@@ -2164,20 +2204,58 @@ class Sorcerer(Boss):
             self.can_hit = True
             self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
-            self.cooldown = random.randint(100,10000)
+            self.cooldown = random.randint(500,1500)
             if random.randint(0,1):
-                EnemyFire(self.game,self.x,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image)
+                clockwise = True
             else:
-                EnemyFire(self.game,self.x,self.y,(self.game.player.x,self.game.player.y),self.arrow_image) #shoots three arrows towards the player in a triple shot format
-            SFX.orb_special.play()
+                clockwise = False
+            if random.randint(0,1):
+                mode = 0
+            elif random.randint(0,1):
+                mode = 1
+            else:
+                mode = 2
+            EnemyFire(self.game,self.x,self.y,(0, 0),self.arrow_image,2,False,clockwise,mode)
+            EnemyFire(self.game,self.x,self.y,(WIN_HEIGHT/2, 0),self.arrow_image,2,False,clockwise,mode)
+            EnemyFire(self.game,self.x,self.y,(WIN_HEIGHT/2, WIN_HEIGHT),self.arrow_image,2,False,clockwise,mode)
+            EnemyFire(self.game,self.x,self.y,(WIN_HEIGHT, 0),self.arrow_image,2,False,clockwise,mode)
+            EnemyFire(self.game,self.x,self.y,(0, WIN_HEIGHT/2),self.arrow_image,2,False,clockwise,mode)
+            EnemyFire(self.game,self.x,self.y,(WIN_HEIGHT, WIN_HEIGHT/2),self.arrow_image,2,False,clockwise,mode)
+            EnemyFire(self.game,self.x,self.y,(0, WIN_HEIGHT),self.arrow_image,2,False,clockwise,mode)
+            EnemyFire(self.game,self.x,self.y,(WIN_HEIGHT, WIN_HEIGHT),self.arrow_image,2,False,clockwise,mode)
+            SFX.fire_attack.play()
+            self.attack_count += 1
     def chase(self):
         self.roam()
+    def hex(self):
+        if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+            self.player_x,self.player_y = WIN_HEIGHT/2,WIN_HEIGHT/2
+            self.speed = -3
+            self.cooldown = 1000
+            self.last_arrow = pygame.time.get_ticks()
+            Hex(self.game,self.x,self.y,self.game.hex_attack,3)
+            self.attack_count += 1
     def roam(self):
         # Find direction vector (dx, dy) between enemy and player.
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
-            if random.randint(0,2):
-                self.throw_arrow()
+            if self.attack_count < 10:
+                if random.randint(0,10):
+                    self.throw_arrow()
+                    
+                else:
+                    self.hex()
+            else:
+                self.cooldown = 10000
+                self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT) 
+                self.speed = 2   
+                if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
+                    self.last_arrow = pygame.time.get_ticks()
+                    self.player_x,self.player_y = WIN_HEIGHT/2, WIN_HEIGHT/2
+                    self.cooldown = 1000
+                    self.speed = 3.5  
+                    self.attack_count = 0
+
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
             self.player_x,self.player_y = self.game.player.x, self.game.player.y
             self.speed = 3
@@ -2216,6 +2294,10 @@ class Prince(Boss):
         self.can_hurt = True
         self.speed = 2.5
         self.visible = True
+
+        self.attack_count = 0
+        self.opening_cooldown = 20000
+        self.last_opening = pygame.time.get_ticks()
     def throw_arrow(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0): #If able to shoot arrow, shoot a shot of three
             self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
@@ -2230,6 +2312,9 @@ class Prince(Boss):
             else:
                 GuardSword(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.sword_image)
                 GuardSword(self.game,random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT),(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.sword_image)
+            self.attack_count += 1
+            if self.attack_count >= 18:
+                self.last_opening = pygame.time.get_ticks()
     def chase(self):
         self.roam()
     def roam(self):
@@ -2237,7 +2322,7 @@ class Prince(Boss):
         dirvect = pygame.math.Vector2(self.player_x - self.x, self.player_y - self.rect.y)
         if self.visible:
             if abs(dirvect.x) < 150.0 or abs(dirvect.y) < 150.0:
-                if random.randint(0,3):
+                if random.randint(0,3) and self.attack_count < 18:
                     self.throw_arrow()
                 else:
                     if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
@@ -2247,10 +2332,19 @@ class Prince(Boss):
                         self.cooldown = 500
                         self.last_arrow = pygame.time.get_ticks()
                         SFX.disappear.play()
+            if self.attack_count >= 18:
+                self.opening_cooldown = 10000
+                if (pygame.time.get_ticks() - self.last_opening > self.opening_cooldown):
+                    self.cooldown = 500
+                    self.last_arrow = pygame.time.get_ticks()
+                    self.attack_count = 0
         else:
-            if random.randint(0,1):
+            if random.randint(0,1) and self.attack_count < 18:
                 if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
                     SFX.orb_throw.play()
+                    self.attack_count += 1
+                    if self.attack_count >= 18:
+                        self.last_opening = pygame.time.get_ticks()
                     self.cooldown = 750
                     self.last_arrow = pygame.time.get_ticks()
                     SFX.disappear.play()
@@ -2264,7 +2358,10 @@ class Prince(Boss):
                         self.can_hit = True
                         self.can_hurt = True
                         self.last_arrow = pygame.time.get_ticks()
-                        self.cooldown = 1000
+                        if self.attack_count < 12:
+                            self.cooldown = 1500
+                        else:
+                            self.cooldown = 5000
                         SFX.disappear.play()
         if pygame.time.get_ticks() - self.last_arrow > self.cooldown:
             self.player_x,self.player_y = self.game.player.x, self.game.player.y
@@ -2339,13 +2436,17 @@ class Empress(Boss):
                 if self.form == "twisted":
                     GroundAttack(self.game,self.player_x,self.player_y,self.game.dark_attack,6,48,78,0.05)
                 elif self.form == "pink":
+                    SFX.fire_attack.play()
                     Projectile(self.game,self.x,self.y,(self.player_x,self.player_y),self.pink_image,3)
                 elif self.form == "yellow":
+                    SFX.laser.play()
                     Projectile(self.game,self.x,self.y,(self.player_x,self.player_y),self.yellow_image,4)
                 elif self.form == "blue":
+                    SFX.orb_throw.play()
                     GuardSword(self.game,self.x,self.y,(self.player_x,self.player_y),self.blue_image)
                 self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
             if self.form == "blue":
+                SFX.dash.play()
                 self.player_x,self.player_y = random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)
                 self.speed = 6
                 self.cooldown = 300

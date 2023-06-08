@@ -50,7 +50,8 @@ class SFX: #All the SFX are stored as variables in a class to be played at anyti
     player_hurt = pygame.mixer.Sound('Assets/Audio/SFX/Player/player_hurt.wav'); player_hurt.set_volume(1.2)
     death = pygame.mixer.Sound('Assets/Audio/SFX/Player/death.wav'); death.set_volume(1.5)
     
-    sword_shing = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/sword_shing.wav'); sword_shing.set_volume(0.3)
+    sword_shing = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/sword_shing.wav'); sword_shing.set_volume(0.4)
+    fire_attack = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/fire.wav'); fire_attack.set_volume(0.7)
     ice_attack = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/ice.wav'); ice_attack.set_volume(0.5)
     lightning_attack = pygame.mixer.Sound('Assets/Audio/SFX/Enemies/lightning.wav'); lightning_attack.set_volume(0.5)
     low_hp_alert = pygame.mixer.Sound('Assets/Audio/SFX/Player/low_hp_alert.wav'); low_hp_alert.set_volume(1.3)
