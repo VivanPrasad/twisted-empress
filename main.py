@@ -9,7 +9,7 @@ class Game:
         pygame.init()
         self.screen = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT)) #Displays the screen size properly
         self.title = pygame.display.set_caption("Twisted Empress")
-        self.icon = pygame.display.set_icon(pygame.image.load("Assets/icon.png"))
+        self.icon = pygame.display.set_icon(pygame.image.load("Assets/UI/icon.png"))
         self.clock = pygame.time.Clock()
         self.title_font = pygame.font.Font('Assets/Font/royal-intonation.ttf',48)
         self.font = pygame.font.Font('Assets/Font/royal-intonation.ttf',32)
@@ -17,7 +17,7 @@ class Game:
         
         Music.title_music.play()
         
-        self.background_spritesheet = Spritesheet("Assets/map.png") #All the several backgrounds for each of the 20 levels
+        self.background_spritesheet = Spritesheet("Assets/World/map.png") #All the several backgrounds for each of the 20 levels
         
         self.character_spritesheet = Spritesheet("Assets/Entities/player.png") #Sprite for player movement
 
@@ -43,7 +43,7 @@ class Game:
         self.empress_spritesheet = Spritesheet("Assets/Entities/Bosses/empress.png")
 
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
-        self.intro_background = pygame.image.load("Assets/map.png").convert()
+        self.intro_background = pygame.image.load("Assets/World/map.png").convert()
         self.intro_background.set_alpha(3)
         self.level = 1
         self.area = 1
