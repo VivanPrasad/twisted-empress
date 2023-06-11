@@ -1787,15 +1787,16 @@ class Rogue(Boss):
             self.image.set_alpha(255)
             self.last_arrow = pygame.time.get_ticks()
             self.cooldown = 1500
-            Projectile(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,4)
-            Projectile(self.game,self.x+32,self.y,(self.game.player.x,self.game.player.y),self.arrow_image,4) #shoots three arrows towards the player in a triple shot format
-            Projectile(self.game,self.x+32,self.y,(random.randint(0,WIN_HEIGHT), random.randint(0,WIN_HEIGHT)),self.arrow_image,4)
+            SFX.throw_two.play()
+            Projectile(self.game,self.x+24,self.y,(self.game.player.x-30,self.game.player.y-30),self.arrow_image,4)
+            Projectile(self.game,self.x+24,self.y,(self.game.player.x+30,self.game.player.y+30),self.arrow_image,4) #shoots three arrows towards the player in a triple shot format
     def circle_shurikens(self):
         if (pygame.time.get_ticks() - self.last_arrow > self.cooldown or self.last_arrow == 0):
-            Projectile(self.game,self.x+32,self.y,(self.x - WIN_WIDTH, self.y),self.arrow_image,3)
-            Projectile(self.game,self.x+32,self.y,(self.x + WIN_WIDTH, self.y),self.arrow_image,3)
-            Projectile(self.game,self.x+32,self.y,(self.x, self.y-WIN_HEIGHT),self.arrow_image,3)
-            Projectile(self.game,self.x+32,self.y,(self.x, self.y+WIN_HEIGHT),self.arrow_image,3)
+            Projectile(self.game,self.x+24,self.y,(self.x - WIN_WIDTH, self.y),self.arrow_image,3)
+            Projectile(self.game,self.x+24,self.y,(self.x + WIN_WIDTH, self.y),self.arrow_image,3)
+            Projectile(self.game,self.x+24,self.y,(self.x, self.y-WIN_HEIGHT),self.arrow_image,3)
+            Projectile(self.game,self.x+24,self.y,(self.x, self.y+WIN_HEIGHT),self.arrow_image,3)
+            SFX.throw_circle.play()
             self.cooldown = 2000
             self.player_x,self.player_y = WIN_HEIGHT/2,WIN_HEIGHT/2
             self.speed = 2
