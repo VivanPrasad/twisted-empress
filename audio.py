@@ -19,8 +19,10 @@ class Music:
     the_empress = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_empress.mp3"); the_empress.set_volume(0.9)
     boss_music = [the_rogue,the_guardian,the_wizard,the_prince,the_empress]
 
-    the_haunter = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_haunter.mp3"); the_haunter.set_volume(0.9) #miniboss
-    #the angel miniboss does not have a soundtrack
+    the_haunter = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_haunter.mp3"); the_haunter.set_volume(1.2) #area 3 miniboss
+    the_librarian = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_librarian.mp3"); the_librarian.set_volume(1.1)
+    the_fallen = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_fallen.mp3"); the_fallen.set_volume(10.0) #final miniboss
+    miniboss_music = [the_haunter,the_librarian,the_fallen]
 
 class SFX: #All the SFX are stored as variables in a class to be played at anytime!
     health_orb = pygame.mixer.Sound('Assets/Audio/SFX/Objects/health_orb.wav'); health_orb.set_volume(1.5)

@@ -1,4 +1,4 @@
-import pygame
+import pygame, configparser
 from sprites import *
 from config import *
 from audio import *
@@ -7,7 +7,7 @@ import sys
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT)) #Displays the screen size properly
+        self.screen = pygame.display.set_mode((WIN_WIDTH,WIN_HEIGHT),pygame.RESIZABLE) #Displays the screen size properly
         self.title = pygame.display.set_caption("Twisted Empress")
         self.icon = pygame.display.set_icon(pygame.image.load("Assets/UI/icon.png"))
         self.clock = pygame.time.Clock()
@@ -44,7 +44,7 @@ class Game:
 
         self.drops_spritesheet = Spritesheet("Assets/Objects/drops.png")
         self.intro_background = pygame.image.load("Assets/World/map.png").convert()
-        self.intro_background.set_alpha(3)
+        self.intro_background.set_alpha(2)
         self.level = 1
         self.area = 1
 
@@ -90,7 +90,9 @@ class Game:
             ],]
 
         self.new()
+        self.file_data = {}
     def new(self):
+        self.load_file_data()
         self.intro_screen()
         self.playing = True
 
@@ -112,7 +114,7 @@ class Game:
         pygame.quit()
         sys.exit()
     def events(self):
-        #game loop events
+        #Game Loop Events
         self.mouse_pos = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -153,6 +155,10 @@ class Game:
         self.clock.tick(FPS)
         pygame.display.update()
     
+    def load_file_data(self):
+        file = configparser.ConfigParser()
+        file.read("data.ini")
+        print(file["player_data"]["health"])
     def main(self):
         #game loop
         self.start_time = pygame.time.get_ticks()
@@ -181,15 +187,15 @@ class Game:
             hours += 1
             minutes -= 60
         power1 = self.font.render('With the Power of', True, WHITE)
-        power2 = self.font.render(f'{["Lionheart","Odyssey","Acuity"][self.player_power]}', True, [BLUE,YELLOW,PINK][self.player_power])
+        power2 = self.font.render(f'{["Lionheart","Odyssey","Acuity","Resolve","Virtue","Malice"][self.player_power]}', True, [BLUE,YELLOW,PINK,GREEN,WHITE,PURPLE][self.player_power])
         text1 = self.font.render('You defeated the Twisted Empress.', True, WHITE)
         text2 = self.font.render('But at what cost?', True, (120,120,120))
-        text3 = self.font.render('The world has been restored.', True, WHITE)
+        text3 = self.font.render('The world is restored.', True, WHITE)
         text4 = self.font.render('...or is it?', True, RED)
 
         time_text = self.font.render(f'Completion Time: {f"0{hours}" if hours < 10 else f"{hours}"}:{f"0{minutes}" if minutes < 10 else f"{minutes}"}:{f"0{seconds}" if seconds < 10 else f"{seconds}"}', True, (141,216,148))
         mode = self.font.render('Normal Mode',True, (48,48,48))
-        replay_text = self.font.render('Press R to Replay', True, [PINK,BLUE,YELLOW][self.player_power])
+        replay_text = self.font.render('Press R to Replay', True, [BLUE,YELLOW,PINK,GREEN,WHITE,PURPLE][self.player_power])
         times_hit_text = self.font.render(f'Times Hit: {self.player.times_hit}', True, RED if self.player.times_hit != 0 else (74,185,163))
         while game_complete == True:
             for event in pygame.event.get():
@@ -261,15 +267,15 @@ class Game:
             self.game_complete()
             self.playing = False
             return
-        if self.area == 3 and self.level == 2:
+        if self.area >= 3 and self.level == 2:
             for song in Music.area_music:
                 song.fadeout(2000)
-            Music.the_haunter.play(-1,0,5000)
+            Music.miniboss_music[self.area-3].play(-1,0,5000)
         else:
-            if self.area == 3 and self.level == 3:
-                Music.the_haunter.fadeout(2000)
-                Music.area_music[self.area-1].play(-1,0,5000)
-                
+            if self.level == 3 and self.area >= 3:
+                    Music.miniboss_music[self.area-3].fadeout(2000)
+                    Music.area_music[self.area-1].play(-1,0,5000)
+            
             if self.level == 5:
                 for song in Music.boss_music:
                     song.fadeout(2000)
@@ -305,11 +311,11 @@ class Game:
         except: pass
         
     def intro_screen(self):
-        title = self.title_font.render('Twisted Empress', True, WHITE, BLACK)
+        title = self.title_font.render('Twisted Empress', True, WHITE)
         title_rect = title.get_rect(x=WIN_WIDTH/2-160,y=WIN_HEIGHT/2-170)
         play_button = Button(WIN_WIDTH/2-50,WIN_HEIGHT/2-50,100,50,WHITE,BLACK,'Play',32)
-
-        version = self.font.render('Version I', True, WHITE,BLACK)
+        control_button = Button(WIN_WIDTH/2-70,WIN_HEIGHT/2+25,140,50,WHITE,BLACK,'Controls',32)
+        version = self.font.render('Version II', True, WHITE)
         version_rect = version.get_rect(x=WIN_WIDTH-150,y=WIN_HEIGHT-50)
 
         main_menu = True
@@ -333,25 +339,91 @@ class Game:
             self.screen.blit(title, title_rect)
             self.screen.blit(version, version_rect)
             self.screen.blit(play_button.image, play_button.rect)
+            self.screen.blit(control_button.image, control_button.rect)
             self.clock.tick(FPS)
             pygame.display.update()
         if self.running:
             self.fade()
             self.power_select()
+    def game_mode_select(self):
+        quote = self.font.render('Do not be afraid.', True, (200,200,200))
+        quote2 = self.font.render('Fear locks the light in darkness, Courage is the key.', True, PURPLE)
+        quote3 = self.font.render('What path do you walk?', True, WHITE)
+        
+        guided = Button(274+48-50,128*2.75,200,50,BLUE,(50,49,59),'Guided',24)
+        merciless = Button(274+48-50,128*3.5,200,50,PINK,(50,49,59),'Merciless',24)
+        perfected = Button(274+48-50,128*4.25,200,50,YELLOW,(50,49,59),'Perfected',24)
+
+        buttons = [guided, merciless, perfected]
+        game_mode_select = True
+        select_sound_played = False
+
+        while game_mode_select == True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game_mode_select = False
+                    self.running = False
+            mouse_pos = pygame.mouse.get_pos()
+            mouse_pressed = pygame.mouse.get_pressed()
+            
+            self.screen.fill(BLACK)
+
+            self.screen.blit(quote, (WIN_WIDTH/2.9,96))
+            self.screen.blit(quote2, (32,48+96+12))
+            self.screen.blit(quote3, (WIN_WIDTH/3.5,48+96+72))
+
+            self.screen.blit(guided.image,guided.rect)
+            self.screen.blit(merciless.image,merciless.rect)
+            self.screen.blit(perfected.image,perfected.rect)
+
+            for button in buttons:
+                if button.is_pressed(mouse_pos, mouse_pressed):
+                    game_mode_select = False
+                    SFX.game_begin.play()
+                    Music.title_music.fadeout(1000)
+                    Music.title_music.fadeout(1000)
+                    if self.level != 5:
+                        Music.area_music[self.area-1].play(-1,0,5000)
+                    else:
+                        Music.boss_music[self.area-1].play(-1,0,5000)
+                    self.difficulty = buttons.index(button) #gives the chosen power via button index (which aligns with the power enumeration)
+                if button.is_hovered(mouse_pos, mouse_pressed):
+                    if button.image.get_alpha() != 255:
+                        select_sound_played = True
+                        SFX.ui_select.play(0,100)
+                    button.image.set_alpha(255)
+                        
+                else:
+                    if button.image.get_alpha() == 255 and select_sound_played:
+                        select_sound_played = False
+                    button.image.set_alpha(int(255/1.5))
+            self.clock.tick(FPS)
+            pygame.display.update()
+        if self.running:
+            self.fade()
     def power_select(self):
         # Power Select Menu
-        lionheart = self.character_spritesheet.get_sprite(0,48*3,TILESIZE*2,TILESIZE).convert() #converts the images to save space
-        odyssey = self.character_spritesheet.get_sprite(48*2,48*3,TILESIZE*2,TILESIZE).convert()
-        acuity = self.character_spritesheet.get_sprite(96*2,48*3,TILESIZE*2,TILESIZE).convert()
+        lionheart = self.character_spritesheet.get_sprite(48*5,48*0,48*2,48).convert() #converts the images to save space
+        odyssey = self.character_spritesheet.get_sprite(48*5,48*1,48*2,48).convert()
+        acuity = self.character_spritesheet.get_sprite(48*5,48*2,48*2,48).convert()
+        resolve = self.character_spritesheet.get_sprite(48*5,48*3,48*2,48).convert()
+        virtue = self.character_spritesheet.get_sprite(48*5,48*4,48*2,48).convert()
+        malice = self.character_spritesheet.get_sprite(48*5,48*5,48*2,48).convert()
 
-        character = [lionheart,odyssey,acuity]
+        character = [lionheart,odyssey,acuity,resolve,virtue,malice]
         quote = self.font.render('So much to do... so little time.', True, WHITE)
-        quote2 = self.font.render('What is it that you seek?', True, WHITE)
+        quote2 = self.font.render('What is it that you seek?', True, YELLOW)
 
-        button1 = Button(58,128*3.7,190,50,(94, 253, 247),(50,49,59),'Power of Lionheart',20)
-        button2 = Button(274,128*3.7,190,50,(253, 254, 137),(50,49,59),'Power of Odyssey',20)
-        button3 = Button(494,128*3.7,190,50,(255, 93, 204),(50,49,59),'Power of Acuity',20)
-        buttons = [button1,button2,button3]
+        button1 = Button(58+48,128*3,100,50,(94, 253, 247),(50,49,59),'Lionheart',20)
+        button2 = Button(274+48,128*3,100,50,(253, 254, 137),(50,49,59),'Odyssey',20)
+        button3 = Button(494+48,128*3,100,50,(255, 93, 204),(50,49,59),'Acuity',20)
+        button4 = Button(58+48,128*4.6,100,50,(141, 216, 148),(50,49,59),'Resolve',20)
+        button5 = Button(274+48,128*4.6,100,50,(255,255,255),(50,49,59),'Virtue',20)
+        button6 = Button(494+48,128*4.6,100,50,(133, 83, 149),(50,49,59),'Malice',20)
+        #Resolve (141, 216, 148)
+        #Virtue (0,0,0)
+        #Malice (133, 83, 149)
+        buttons = [button1,button2,button3,button4,button5,button6]
         select_sound_played = False
 
         power_select = True
@@ -369,23 +441,27 @@ class Game:
             self.screen.blit(quote, (WIN_WIDTH/4,96))
             self.screen.blit(quote2, (WIN_WIDTH/3.5,96+72))
 
-            self.screen.blit(lionheart,(128,128*3))
+            self.screen.blit(lionheart,(128,128*2.5))
             self.screen.blit(button1.image,button1.rect)
             
-            self.screen.blit(odyssey,(128*2+84,128*3))
+            self.screen.blit(odyssey,(128*2+84,128*2.5))
             self.screen.blit(button2.image,button2.rect)
 
-            self.screen.blit(acuity,(128*3+84*2,128*3))
+            self.screen.blit(acuity,(128*3+84*2,128*2.5))
             self.screen.blit(button3.image,button3.rect)
+
+            self.screen.blit(resolve,(128,128*4))
+            self.screen.blit(button4.image,button4.rect)
+
+            self.screen.blit(virtue,(128*2+84,128*4))
+            self.screen.blit(button5.image,button5.rect)
+
+            self.screen.blit(malice,(128*3+84*2,128*4))
+            self.screen.blit(button6.image,button6.rect)
             for button in buttons:
                 if button.is_pressed(mouse_pos, mouse_pressed):
                     power_select = False
-                    SFX.game_begin.play()
-                    Music.title_music.fadeout(1000)
-                    if self.level != 5:
-                        Music.area_music[self.area-1].play(-1,0,5000)
-                    else:
-                        Music.boss_music[self.area-1].play(-1,0,5000)
+                    SFX.ui_confirm.play()
                     self.player_power = buttons.index(button) #gives the chosen power via button index (which aligns with the power enumeration)
                 if button.is_hovered(mouse_pos, mouse_pressed):
                     if button.image.get_alpha() != 255:
@@ -403,6 +479,5 @@ class Game:
             pygame.display.update()
         if self.running:
             self.fade()
-
-
+            self.game_mode_select()
 g = Game()
