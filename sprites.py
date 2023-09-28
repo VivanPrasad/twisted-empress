@@ -186,7 +186,7 @@ class Player(pygame.sprite.Sprite): #The Player
 
         self.dash_cooldown = 500
 
-        self.basic_cooldowns = [500,600,700,500,500,400] #cooldowns for basic attacks
+        self.basic_cooldowns = [500,600,700,1100,500,400] #cooldowns for basic attacks
         self.basic_cooldown = self.basic_cooldowns[self.power]
         self.basic_combo = 0
 
@@ -559,10 +559,10 @@ class BasicAttack(pygame.sprite.Sprite):
         elif self.game.player.power == 3:
             if not self.animation_frame > 2:
                 if self.is_special:
-                    self.game.player.x -= self.x_vel
-                    self.game.player.y -= self.y_vel
-                    self.game.player.rect.x -= self.x_vel
-                    self.game.player.rect.y -= self.y_vel
+                    self.game.player.x -= self.x_vel * 1.2
+                    self.game.player.y -= self.y_vel * 1.2
+                    self.game.player.rect.x -= self.x_vel * 1.2
+                    self.game.player.rect.y -= self.y_vel * 1.2
                 self.x = self.game.player.x - (self.x_vel * self.speed)
                 self.y = self.game.player.y - (self.y_vel * self.speed)
             self.image = self.game.attack_spritesheet.get_sprite(48*int(self.is_special),48*7+(48*floor(self.animation_frame)),48,48)
@@ -574,7 +574,7 @@ class BasicAttack(pygame.sprite.Sprite):
                 if self.animation_frame == 0:
                     self.game.player.dashing = 1
                     SFX.dash.play()
-                    self.game.player.last_dashed = pygame.time.get_ticks() + 200
+                    self.game.player.last_dashed = pygame.time.get_ticks() - 400
             if self.animation_frame < 4:
                 self.animation_frame += 0.1
             else:
@@ -667,7 +667,10 @@ class SpecialAttack(pygame.sprite.Sprite):
             self.game.player.special_basic = True
             self.game.player.basic_combo = 0
         self.has_collided = False
-        self.game.player.basic_cooldown = 800
+        if self.game.player.power in [0,1,2,4,5]:
+            self.game.player.basic_cooldown = 800
+        else:
+            self.game.player.basic_cooldown = 100
         self.animation_frame = 0
         self.sound_played = False
     def update(self):
