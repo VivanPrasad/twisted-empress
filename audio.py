@@ -10,19 +10,19 @@ class Music:
     the_enchanted_forest = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_enchanted_forest.mp3") ; the_enchanted_forest.set_volume(0.9)
     the_castle = pygame.mixer.Sound("Assets/Audio/Music/Areas/the_castle.mp3"); the_castle.set_volume(0.8)
     
-    area_music = [the_plains,the_desert,the_enchanted_forest,the_castle,title_music] #make sure to have it minus of the other area due to the index!
+    area_music = [the_plains,the_desert,the_enchanted_forest,the_castle,title_music,title_music,title_music,title_music,title_music] #make sure to have it minus of the other area due to the index!
 
     the_rogue = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_rogue.mp3"); the_rogue.set_volume(0.9)
     the_guardian = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_guardian.mp3"); the_guardian.set_volume(0.9)
     the_wizard = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_sorcerer.mp3"); the_wizard.set_volume(0.9)
     the_prince = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_prince.mp3"); the_prince.set_volume(0.9)
     the_empress = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_empress.mp3"); the_empress.set_volume(0.9)
-    boss_music = [the_rogue,the_guardian,the_wizard,the_prince,the_empress]
+    boss_music = [the_rogue,the_guardian,the_wizard,the_prince,the_empress,the_empress,the_empress,the_empress]
 
     the_haunter = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_haunter.mp3"); the_haunter.set_volume(1.2) #area 3 miniboss
     the_librarian = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_librarian.mp3"); the_librarian.set_volume(1.1)
     the_fallen = pygame.mixer.Sound("Assets/Audio/Music/Bosses/the_fallen.mp3"); the_fallen.set_volume(10.0) #final miniboss
-    miniboss_music = [the_haunter,the_librarian,the_fallen]
+    miniboss_music = [the_haunter,the_librarian,the_fallen,the_fallen,the_fallen,the_fallen]
 
 class SFX: #All the SFX are stored as variables in a class to be played at anytime!
     health_orb = pygame.mixer.Sound('Assets/Audio/SFX/Objects/health_orb.wav'); health_orb.set_volume(1.5)
