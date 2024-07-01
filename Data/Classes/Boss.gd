@@ -1,6 +1,6 @@
 ## The main class for bosses.
 ##
 ## No Description[br][br]
-## [i]Last Modified: May 25[/i][br]
+## Last Modified: June 30[br]
 class_name Boss
 extends Enemy

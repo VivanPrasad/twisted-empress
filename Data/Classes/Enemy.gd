@@ -4,16 +4,16 @@
 ## an enemy. Gives resources to handle behavior and AI.[br]
 ## Specific variants of this class allow for context, but
 ## the normal AI is not defined.[br][br]
-## [i]Last Modified: May 25[/i][br]
+## Last Modified: June 30
 
 class_name Enemy
 extends CharacterBody2D
 
 ## Constant can vary between enemies.
-var max_hp : int = 10
+@export var max_hp : int = 10
 
 ## The health of the enemy. Always clamped
-var hp : int = max_hp : 
+@export var hp : int = max_hp : 
 	set(value):
 		hp = min(value,0,max_hp)
 
